@@ -9,6 +9,15 @@ export default defineConfig(({ mode }) => {
   const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'AdmFinanceira';
   const base = isGitHubPages ? `/${repoName}/` : '/';
 
+  // Debug logs (apenas em build, não em dev)
+  if (process.env.NODE_ENV === 'production' || isGitHubPages) {
+    console.log('[Vite Config] GITHUB_PAGES:', process.env.GITHUB_PAGES);
+    console.log('[Vite Config] GITHUB_REPOSITORY:', process.env.GITHUB_REPOSITORY);
+    console.log('[Vite Config] Repo Name:', repoName);
+    console.log('[Vite Config] Base path:', base);
+    console.log('[Vite Config] Mode:', mode);
+  }
+
   return {
     plugins: [react()],
     base: base,
