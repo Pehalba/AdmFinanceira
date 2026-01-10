@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   // Para GitHub Pages: usar base path do repositório
   // O workflow do GitHub Actions define GITHUB_REPOSITORY
   const isGitHubPages = process.env.GITHUB_PAGES === 'true' || mode === 'github-pages';
-  const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'financeiro';
+  const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'AdmFinanceira';
   const base = isGitHubPages ? `/${repoName}/` : '/';
 
   return {
