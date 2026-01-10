@@ -1,0 +1,110 @@
+.donut-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.5rem 0;
+}
+
+.donut-chart__empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 3rem 0;
+}
+
+.donut-chart__container {
+  flex-shrink: 0;
+}
+
+.donut-chart__svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.donut-chart__slice {
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.donut-chart__slice:hover {
+  opacity: 0.8;
+}
+
+.donut-chart__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.donut-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.donut-chart__legend-color {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+}
+
+.donut-chart__legend-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.donut-chart__legend-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.donut-chart__legend-value {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .donut-chart {
+    gap: 1.5rem;
+    padding: 1rem 0;
+  }
+
+  .donut-chart__legend {
+    gap: 0.75rem;
+  }
+
+  .donut-chart__legend-item {
+    gap: 0.5rem;
+  }
+
+  .donut-chart__legend-color {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+}
+
+/* Desktop: gráfico e legenda lado a lado */
+@media (min-width: 769px) {
+  .donut-chart {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2rem;
+  }
+  
+  .donut-chart__container {
+    flex-shrink: 0;
+  }
+  
+  .donut-chart__legend {
+    flex: 1;
+    max-width: 300px;
+  }
+}

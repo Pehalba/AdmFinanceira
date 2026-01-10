@@ -1,0 +1,140 @@
+.banks {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.banks__loading {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.banks__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.banks__title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #111827;
+}
+
+.banks__form-card {
+  margin-bottom: 2rem;
+}
+
+.banks__form-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.banks__form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.banks__form > button {
+  grid-column: 1 / -1;
+}
+
+.banks__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.banks__card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.banks__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.banks__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.banks__card-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.banks__card-delete {
+  flex-shrink: 0;
+}
+
+.banks__card-type {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-transform: capitalize;
+  margin-bottom: 0.5rem;
+}
+
+.banks__card-balance {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #059669;
+}
+
+.banks__empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 3rem 0;
+}
+
+/* Responsivo para mobile */
+@media (max-width: 768px) {
+  .banks {
+    padding: 1rem;
+  }
+
+  .banks__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .banks__title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .banks__header > button {
+    width: 100%;
+  }
+
+  .banks__form {
+    grid-template-columns: 1fr; /* Uma coluna no mobile */
+    gap: 1rem;
+  }
+
+  .banks__form > button {
+    width: 100%;
+  }
+
+  .banks__grid {
+    grid-template-columns: 1fr; /* Uma coluna no mobile */
+    gap: 1rem;
+  }
+
+  .banks__card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+}

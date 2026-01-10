@@ -1,0 +1,269 @@
+.monthly-bills {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  padding-bottom: 6rem; /* Espaço para o FAB no mobile */
+  position: relative; /* Garantir contexto para elementos fixed */
+  min-height: calc(100vh - 200px); /* Altura mínima para garantir espaço */
+}
+
+/* Desktop: menos padding-bottom */
+@media (min-width: 769px) {
+  .monthly-bills {
+    padding-bottom: 2rem;
+    min-height: auto;
+  }
+}
+
+.monthly-bills__loading {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.monthly-bills__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.monthly-bills__title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #111827;
+}
+
+.monthly-bills__controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.monthly-bills__month-selector {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.monthly-bills__form-card {
+  margin-bottom: 2rem;
+}
+
+.monthly-bills__form-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.monthly-bills__form-hint {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.monthly-bills__form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.monthly-bills__form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.monthly-bills__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.monthly-bills__item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.monthly-bills__item:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.monthly-bills__item--paid {
+  opacity: 0.7;
+  background-color: #f3f4f6;
+}
+
+.monthly-bills__item--paid .monthly-bills__item-title {
+  text-decoration: line-through;
+}
+
+.monthly-bills__item-checkbox {
+  flex-shrink: 0;
+}
+
+.monthly-bills__checkbox {
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+}
+
+.monthly-bills__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.monthly-bills__item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.monthly-bills__item-title {
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.monthly-bills__item-amount {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.monthly-bills__item-meta {
+  font-size: 0.875rem;
+  color: #6b7280;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.monthly-bills__item-notes {
+  font-style: italic;
+}
+
+.monthly-bills__item-actions {
+  flex-shrink: 0;
+}
+
+.monthly-bills__item-delete {
+  margin-left: 0.5rem;
+}
+
+.monthly-bills__empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 3rem 0;
+}
+
+/* Estilos responsivos para mobile */
+@media (max-width: 768px) {
+  .monthly-bills {
+    padding: 1rem;
+    padding-bottom: 6rem; /* Espaço para o FAB */
+  }
+
+  .monthly-bills__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .monthly-bills__title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .monthly-bills__controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .monthly-bills__month-selector {
+    width: 100%;
+  }
+
+  .monthly-bills__controls > button {
+    width: 100%;
+  }
+
+  .monthly-bills__form {
+    grid-template-columns: 1fr; /* Uma coluna no mobile */
+    gap: 1rem;
+  }
+
+  .monthly-bills__form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .monthly-bills__form-actions > button {
+    width: 100%;
+  }
+
+  .monthly-bills__item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .monthly-bills__item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .monthly-bills__item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .monthly-bills__item-actions > button {
+    width: 100%;
+  }
+
+  .monthly-bills__item-checkbox {
+    align-self: flex-start;
+  }
+
+  .monthly-bills__item-meta {
+    font-size: 0.8125rem; /* 13px */
+    line-height: 1.5;
+  }
+
+  .monthly-bills__item-title {
+    font-size: 1rem;
+  }
+
+  .monthly-bills__item-amount {
+    font-size: 1.125rem;
+  }
+
+  .monthly-bills__form-title {
+    font-size: 1.25rem;
+  }
+
+  .monthly-bills__form-hint {
+    font-size: 0.8125rem;
+  }
+}

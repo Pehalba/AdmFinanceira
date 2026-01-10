@@ -1,0 +1,69 @@
+.fab {
+  position: fixed !important; /* Garantir que sempre seja fixed */
+  left: 50% !important;
+  transform: translateX(-50%) !important; /* Garantir centralização */
+  bottom: 1.75rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  display: flex !important; /* Garantir que está visível */
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  z-index: 9999 !important; /* Z-index muito alto para garantir que fique acima de tudo */
+  transition: all 0.2s ease;
+  margin-left: 0 !important; /* Reset margin */
+  margin-right: 0 !important; /* Reset margin */
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.fab:hover {
+  background-color: #1d4ed8;
+  transform: translateX(-50%) scale(1.05) !important; /* Manter centralização no hover */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.fab:active {
+  transform: translateX(-50%) scale(0.95) !important; /* Manter centralização no active */
+}
+
+.fab__icon {
+  line-height: 1;
+}
+
+/* Desktop: manter centralizado e bottom padrão */
+@media (min-width: 769px) {
+  .fab {
+    bottom: 1.75rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.5rem;
+  }
+}
+
+/* Mobile: ajustar posição se tiver TabBar/Navbar inferior */
+@media (max-width: 768px) {
+  .fab {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important; /* Garantir que não use right */
+    transform: translateX(-50%) !important; /* Garantir centralização */
+    bottom: 1.5rem !important; /* Centralizado na parte inferior */
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    font-size: 1.5rem !important;
+    z-index: 9999 !important; /* Z-index muito alto para garantir que fique acima de tudo */
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    display: flex !important; /* Garantir que está visível */
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}

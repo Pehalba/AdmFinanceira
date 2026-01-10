@@ -1,0 +1,55 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+package-lock.json
+# Manter package-lock.json comentado acima apenas se não quiser versionar
+
+# Build outputs
+dist
+dist-ssr
+build
+
+# GitHub Pages
+# Manter dist comentado acima se quiser fazer deploy manual
+# Para deploy automático via GitHub Actions, pode deixar dist ignorado
+
+# Environment variables e configurações sensíveis
+.env
+.env.local
+.env.*.local
+*.local
+
+# Firebase config (NUNCA commitar credenciais!)
+firebase.config.js
+firebase-config.js
+
+# Dados do servidor local (não versionar dados de teste)
+server/data/db/
+server/data/*.json
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Sistema operacional
+Thumbs.db
+.DS_Store
+
+# Snapshots e arquivos temporários
+.snapshots/
+*.snap

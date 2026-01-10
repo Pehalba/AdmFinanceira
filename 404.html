@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecionando...</title>
+    <script>
+      // GitHub Pages não suporta SPA routing diretamente
+      // Este arquivo redireciona para index.html mantendo o path atual
+      // O React Router então cuida da rota correta
+      
+      // Detectar nome do repositório do path
+      const path = window.location.pathname;
+      const search = window.location.search;
+      const hash = window.location.hash;
+      const pathParts = path.split('/').filter(Boolean);
+      
+      // O primeiro elemento do path é o nome do repositório
+      // Ex: /financeiro/transactions -> repoName = 'financeiro'
+      const repoName = pathParts[0] || '';
+      
+      // Construir path para salvar no sessionStorage (sem o nome do repo)
+      let routePath = pathParts.slice(1).join('/') || '/';
+      if (!routePath.startsWith('/')) {
+        routePath = '/' + routePath;
+      }
+      
+      // Salvar o path da rota para o React Router usar
+      if (routePath && routePath !== '/' && routePath !== '/index.html') {
+        sessionStorage.setItem('githubPagesRedirect', routePath + search + hash);
+      }
+      
+      // Redirecionar para index.html mantendo o base path
+      const redirectPath = repoName ? `/${repoName}/index.html` : '/index.html';
+      window.location.replace(redirectPath + search + hash);
+    </script>
+  </head>
+  <body>
+    <h1>Redirecionando...</h1>
+    <p>Se não for redirecionado automaticamente, <a id="redirectLink" href="/index.html">clique aqui</a>.</p>
+    <script>
+      // Fallback: atualizar link se necessário
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const repoName = pathParts[0];
+      if (repoName) {
+        const link = document.getElementById('redirectLink');
+        link.href = `/${repoName}/index.html`;
+      }
+    </script>
+  </body>
+</html>
