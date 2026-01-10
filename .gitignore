@@ -9,8 +9,7 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
-package-lock.json
-# Manter package-lock.json comentado acima apenas se não quiser versionar
+# package-lock.json deve ser versionado para garantir builds consistentes no CI/CD
 
 # Build outputs
 dist
