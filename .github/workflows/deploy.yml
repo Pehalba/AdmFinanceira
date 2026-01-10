@@ -3,8 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Ou 'master' dependendo da sua branch principal
-  workflow_dispatch: # Permite execução manual
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -29,7 +29,8 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci || npm install
 
       - name: Build
         env:
@@ -39,7 +40,10 @@ jobs:
         run: |
           echo "Building with GITHUB_PAGES=$GITHUB_PAGES"
           echo "Building with GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
-          echo "Repository name: $(echo $GITHUB_REPOSITORY | cut -d'/' -f2)"
+          
+          # Extrair nome do repositório
+          REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)
+          echo "Repository name: $REPO_NAME"
           
           # Fazer build com variáveis de ambiente explicitamente
           GITHUB_PAGES='true' GITHUB_REPOSITORY="$GITHUB_REPOSITORY" npm run build
@@ -47,25 +51,32 @@ jobs:
           # Verificar se o build foi bem-sucedido
           if [ ! -f "dist/index.html" ]; then
             echo "ERROR: dist/index.html was not generated!"
+            ls -la dist/ || echo "dist directory does not exist!"
             exit 1
           fi
           
           echo ""
           echo "=== Build completed. Checking index.html ==="
-          cat dist/index.html
+          head -20 dist/index.html
           
           echo ""
           echo "=== Checking assets ==="
-          ls -la dist/assets/ || echo "WARNING: assets directory not found!"
+          if [ -d "dist/assets" ]; then
+            ls -la dist/assets/
+          else
+            echo "WARNING: assets directory not found!"
+            ls -la dist/
+          fi
           
           # Verificar se o base path está correto no index.html
           echo ""
           echo "=== Verifying base path ==="
-          if grep -q "/AdmFinanceira/assets" dist/index.html; then
+          if grep -q "/${REPO_NAME}/assets" dist/index.html; then
             echo "✅ Base path is correct in index.html"
           else
             echo "❌ WARNING: Base path may be incorrect in index.html"
-            grep -E "(src=|href=)" dist/index.html || true
+            echo "Looking for /${REPO_NAME}/assets but found:"
+            grep -E "(src=|href=)" dist/index.html || echo "No src or href found!"
           fi
 
       - name: Copy 404.html to dist
