@@ -35,7 +35,12 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: npm run build
+        run: |
+          echo "Building with GITHUB_PAGES=$GITHUB_PAGES"
+          echo "Building with GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
+          npm run build
+          echo "Build completed. Checking index.html..."
+          cat dist/index.html | head -20
 
       - name: Copy 404.html to dist
         run: |
