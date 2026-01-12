@@ -50,14 +50,25 @@ class TransactionService {
       transactionData.categoryId ? categoryRepository.getById(transactionData.categoryId).catch(() => null) : Promise.resolve(null),
     ]);
 
+    // IMPORTANTE: Calcular monthKey ANTES de converter para ISO string
+    // A conversão para ISO pode mudar o mês devido ao timezone
+    const monthKey = getMonthKey(date);
+    console.log('[TransactionService] create - MonthKey calculated BEFORE ISO conversion:', monthKey);
+    
+    // Converter para ISO string para salvar no Firestore
+    const dateISO = date.toISOString();
+    console.log('[TransactionService] create - Date ISO string:', dateISO);
+    
     const transaction = {
       ...transactionData,
-      date: date.toISOString(),
-      monthKey,
+      date: dateISO,
+      monthKey, // Usar monthKey calculado ANTES da conversão
       accountName: account?.name || '',
       bankName: account?.name || '', // Alias para compatibilidade
       categoryName: category?.name || '',
     };
+    
+    console.log('[TransactionService] create - Final transaction monthKey:', transaction.monthKey);
 
     const created = await transactionRepository.create(transaction);
     
