@@ -38,11 +38,10 @@ class TransactionService {
       date = new Date(transactionData.date);
     }
     
-    const monthKey = getMonthKey(date);
-    console.log('[TransactionService] create - Final date:', date);
-    console.log('[TransactionService] create - Calculated monthKey:', monthKey);
+    console.log('[TransactionService] create - Final date object:', date);
     console.log('[TransactionService] create - Date.getFullYear():', date.getFullYear());
     console.log('[TransactionService] create - Date.getMonth() + 1:', date.getMonth() + 1);
+    console.log('[TransactionService] create - Date.getDate():', date.getDate());
 
     // Buscar account e category para denormalizar (accountId pode ser opcional)
     const [account, category] = await Promise.all([
