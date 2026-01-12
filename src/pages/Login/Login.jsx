@@ -20,23 +20,30 @@ export function Login({ onLogin }) {
     setLoading(true);
 
     try {
+      console.log('[Login] Starting', isSignup ? 'signup' : 'login', 'for:', email);
       if (isSignup) {
         const result = await authService.signup(email, password);
+        console.log('[Login] Signup successful:', result);
         // Dados já estão no cache do signup (no authService)
         if (onLogin) {
           // Se for HTTP, retorna { user, defaultAccount, defaultCategories }
           // Se for Fake, retorna o mesmo formato
           const user = result.user || result;
+          console.log('[Login] Calling onLogin with user:', user);
           onLogin(user);
         }
       } else {
         const user = await authService.login(email, password);
+        console.log('[Login] Login successful:', user);
         if (onLogin) {
           onLogin(user);
         }
       }
       navigate('/');
     } catch (err) {
+      console.error('[Login] Error:', err);
+      console.error('[Login] Error message:', err.message);
+      console.error('[Login] Error stack:', err.stack);
       setError(err.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);

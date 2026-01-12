@@ -63,8 +63,16 @@ export function Transactions({ user }) {
   }, [monthFromUrl, openFormFromUrl]);
 
   useEffect(() => {
-    loadData();
-  }, [selectedMonth]);
+    if (user?.uid) {
+      loadData();
+    } else {
+      // Limpar dados se não houver usuário
+      setTransactions([]);
+      setBanks([]);
+      setCategories([]);
+      setLoading(false);
+    }
+  }, [selectedMonth, user?.uid]);
 
   const loadData = async () => {
     setLoading(true);

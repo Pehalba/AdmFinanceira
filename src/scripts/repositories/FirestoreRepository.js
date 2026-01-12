@@ -53,12 +53,18 @@ export class FirestoreAuthRepository extends IAuthRepository {
 
   async signup(email, password, userData = {}) {
     try {
+      console.log("[FirestoreAuthRepository] signup - Attempting to create user:", email);
+      console.log("[FirestoreAuthRepository] signup - Auth object:", auth);
+      console.log("[FirestoreAuthRepository] signup - Auth app:", auth?.app?.name);
+      
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
       const firebaseUser = userCredential.user;
+
+      console.log("[FirestoreAuthRepository] signup - Firebase user created:", firebaseUser.uid, firebaseUser.email);
 
       const user = {
         uid: firebaseUser.uid,
@@ -68,14 +74,28 @@ export class FirestoreAuthRepository extends IAuthRepository {
       };
 
       this.currentUser = user;
-      console.log("[FirestoreAuthRepository] signup - User created:", user.uid);
+      console.log("[FirestoreAuthRepository] signup - User created successfully:", user.uid);
       return user;
     } catch (error) {
       console.error("[FirestoreAuthRepository] signup error:", error);
+      console.error("[FirestoreAuthRepository] signup error code:", error.code);
+      console.error("[FirestoreAuthRepository] signup error message:", error.message);
+      console.error("[FirestoreAuthRepository] signup error stack:", error.stack);
+      
       if (error.code === "auth/email-already-in-use") {
-        throw new Error("Email already in use");
+        throw new Error("Email já está em uso");
       }
-      throw error;
+      if (error.code === "auth/weak-password") {
+        throw new Error("Senha muito fraca. Use pelo menos 6 caracteres");
+      }
+      if (error.code === "auth/invalid-email") {
+        throw new Error("Email inválido");
+      }
+      if (error.code === "auth/operation-not-allowed") {
+        throw new Error("Operação não permitida. Verifique se Email/Senha está habilitado no Firebase Console");
+      }
+      // Mostrar erro mais detalhado para debug
+      throw new Error(`Erro ao criar conta: ${error.message} (Código: ${error.code || 'desconhecido'})`);
     }
   }
 
@@ -124,6 +144,8 @@ export class FirestoreAuthRepository extends IAuthRepository {
   }
 
   getCurrentUser() {
+    // Firebase Auth persiste a sessão automaticamente
+    // auth.currentUser deve estar disponível após o Firebase inicializar
     const user = auth.currentUser;
     if (user) {
       const userObj = {
@@ -131,9 +153,11 @@ export class FirestoreAuthRepository extends IAuthRepository {
         email: user.email,
       };
       this.currentUser = userObj;
+      console.log("[FirestoreAuthRepository] getCurrentUser - Found user:", user.uid);
       return userObj;
     }
     this.currentUser = null;
+    console.log("[FirestoreAuthRepository] getCurrentUser - No user found");
     return null;
   }
 
@@ -169,8 +193,15 @@ export class FirestoreAuthRepository extends IAuthRepository {
 export class FirestoreTransactionRepository extends ITransactionRepository {
   async create(transaction) {
     try {
+      // Garantir que o uid está presente
+      const uid = transaction.uid || auth.currentUser?.uid;
+      if (!uid) {
+        throw new Error("uid is required - user must be authenticated or transaction must have uid");
+      }
+
       const data = {
         ...transaction,
+        uid, // Garantir que uid está presente
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
@@ -185,7 +216,9 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
 
       const docRef = await addDoc(collection(db, "transactions"), data);
       const docSnap = await getDoc(docRef);
-      return { id: docRef.id, ...docSnap.data() };
+      const result = { id: docRef.id, ...docSnap.data() };
+      console.log("[FirestoreTransactionRepository] create - Transaction created:", result.id, "uid:", result.uid, "monthKey:", result.monthKey);
+      return result;
     } catch (error) {
       console.error("[FirestoreTransactionRepository] create error:", error);
       throw error;
@@ -194,11 +227,22 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
 
   async update(id, updates) {
     try {
+      // Garantir que o uid está presente (não atualizar uid, apenas verificar)
+      const uid = updates.uid || auth.currentUser?.uid;
+      if (!uid) {
+        throw new Error("uid is required - user must be authenticated or updates must have uid");
+      }
+
       const docRef = doc(db, "transactions", id);
       const updateData = {
         ...updates,
         updatedAt: Timestamp.now(),
       };
+
+      // Não atualizar uid se estiver nos updates (preservar o original)
+      if (updateData.uid) {
+        delete updateData.uid;
+      }
 
       // Converter date para Timestamp se necessário
       if (updateData.date) {
@@ -219,6 +263,21 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
 
   async delete(id) {
     try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) {
+        throw new Error("No user authenticated");
+      }
+
+      // Verificar se a transação pertence ao usuário antes de deletar
+      const docSnap = await getDoc(doc(db, "transactions", id));
+      if (!docSnap.exists()) {
+        throw new Error("Transaction not found");
+      }
+      const transactionData = docSnap.data();
+      if (transactionData.uid !== uid) {
+        throw new Error("Unauthorized: Transaction does not belong to user");
+      }
+
       await deleteDoc(doc(db, "transactions", id));
       return true;
     } catch (error) {
@@ -250,11 +309,16 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
       }
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({
+      const results = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         date: doc.data().date?.toDate?.()?.toISOString() || doc.data().date,
       }));
+      console.log("[FirestoreTransactionRepository] getByMonth - Found", results.length, "transactions for uid:", uid, "monthKey:", monthKey);
+      if (results.length > 0) {
+        console.log("[FirestoreTransactionRepository] getByMonth - First transaction uid:", results[0].uid);
+      }
+      return results;
     } catch (error) {
       console.error(
         "[FirestoreTransactionRepository] getByMonth error:",

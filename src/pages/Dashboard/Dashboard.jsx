@@ -15,8 +15,13 @@ export function Dashboard({ user }) {
   const [selectedMonth, setSelectedMonth] = useState(getMonthKey(new Date()));
 
   useEffect(() => {
-    loadDashboard();
-  }, [selectedMonth]);
+    if (user?.uid) {
+      loadDashboard();
+    } else {
+      setData(null);
+      setLoading(false);
+    }
+  }, [selectedMonth, user?.uid]);
 
   // Recarregar dashboard quando a página ganhar foco (usuário volta da página de transações)
   useEffect(() => {

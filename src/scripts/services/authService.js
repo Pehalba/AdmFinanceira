@@ -24,33 +24,18 @@ class AuthService {
     
     console.log('[AuthService] init - Starting initialization...');
     
-    // Primeiro, tentar restaurar o usuário atual do localStorage/repositório
-    // getCurrentUser pode ser async no FakeRepository, mas vamos chamar como sync primeiro
-    let storedUser = null;
-    try {
-      storedUser = authRepository.getCurrentUser();
-      // Se getCurrentUser retornou uma Promise, aguardar
-      if (storedUser && typeof storedUser.then === 'function') {
-        storedUser = await storedUser;
+    // Configurar listener PRIMEIRO para capturar mudanças do Firebase Auth
+    // O Firebase Auth persiste a sessão automaticamente e o listener será chamado
+    this.unsubscribe = await authRepository.onAuthStateChanged((user) => {
+      const previousUser = this.currentUser;
+      console.log('[AuthService] onAuthStateChanged - User changed:', user?.uid || 'null', 'Previous:', previousUser?.uid || 'null');
+      
+      // Se trocou de usuário, limpar cache
+      if (previousUser && user && previousUser.uid !== user.uid) {
+        console.log('[AuthService] onAuthStateChanged - User changed, clearing cache');
+        cacheManager.clear();
       }
       
-      if (storedUser && storedUser.uid) {
-        this.currentUser = storedUser;
-        console.log('[AuthService] init - Restored user from storage:', storedUser.uid, 'email:', storedUser.email);
-      } else {
-        console.log('[AuthService] init - No valid user found in storage. storedUser:', storedUser);
-        if (storedUser) {
-          console.log('[AuthService] init - storedUser keys:', Object.keys(storedUser));
-          console.log('[AuthService] init - storedUser.uid:', storedUser.uid);
-        }
-      }
-    } catch (error) {
-      console.error('[AuthService] init - Error restoring user:', error);
-    }
-    
-    // Configurar listener para mudanças futuras
-    this.unsubscribe = await authRepository.onAuthStateChanged((user) => {
-      console.log('[AuthService] onAuthStateChanged - User changed:', user?.uid || 'null');
       this.currentUser = user;
       if (!user || !user.uid) {
         cacheManager.clear();
@@ -59,7 +44,7 @@ class AuthService {
           localStorage.removeItem('financeiro_current_user');
         }
       } else {
-        // Salvar no localStorage quando logar (ambas as chaves para compatibilidade)
+        // Salvar no localStorage quando logar (para compatibilidade)
         if (typeof Storage !== 'undefined') {
           try {
             const userJson = JSON.stringify(user);
@@ -72,19 +57,51 @@ class AuthService {
       }
     });
     
-    // Se ainda não tinha usuário restaurado, verificar novamente após configurar o listener
+    // Aguardar um pouco para o Firebase Auth inicializar e o listener ser chamado
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Depois, tentar restaurar o usuário atual do repositório (Firebase Auth)
+    let storedUser = null;
+    try {
+      storedUser = authRepository.getCurrentUser();
+      // Se getCurrentUser retornou uma Promise, aguardar
+      if (storedUser && typeof storedUser.then === 'function') {
+        storedUser = await storedUser;
+      }
+      
+      if (storedUser && storedUser.uid) {
+        this.currentUser = storedUser;
+        console.log('[AuthService] init - Restored user from repository:', storedUser.uid, 'email:', storedUser.email);
+      } else {
+        console.log('[AuthService] init - No valid user found in repository');
+      }
+    } catch (error) {
+      console.error('[AuthService] init - Error restoring user:', error);
+    }
+    
+    // Se ainda não tem usuário, tentar do localStorage como fallback (apenas para compatibilidade)
     if (!this.currentUser || !this.currentUser.uid) {
-      try {
-        let user = authRepository.getCurrentUser();
-        if (user && typeof user.then === 'function') {
-          user = await user;
+      if (typeof Storage !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('financeiro_current_user');
+          if (stored && stored !== 'null' && stored !== 'undefined') {
+            const parsedUser = JSON.parse(stored);
+            if (parsedUser && parsedUser.uid) {
+              // Verificar se o usuário ainda está autenticado no Firebase
+              const firebaseUser = authRepository.getCurrentUser();
+              if (firebaseUser && firebaseUser.uid === parsedUser.uid) {
+                this.currentUser = parsedUser;
+                console.log('[AuthService] init - Restored user from localStorage fallback:', parsedUser.uid);
+              } else {
+                // Se não está mais autenticado no Firebase, limpar localStorage
+                localStorage.removeItem('financeiro_current_user');
+                console.log('[AuthService] init - User in localStorage but not authenticated in Firebase, cleared');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('[AuthService] init - Error reading from localStorage fallback:', error);
         }
-        if (user && user.uid) {
-          this.currentUser = user;
-          console.log('[AuthService] init - Restored user after listener setup:', user.uid);
-        }
-      } catch (error) {
-        console.error('[AuthService] init - Error in second restore attempt:', error);
       }
     }
     
@@ -107,6 +124,7 @@ class AuthService {
    * SEM fazer releitura - os dados são retornados diretamente
    */
   async signup(email, password, userData = {}) {
+    console.log('[AuthService] signup - Starting signup for:', email);
     if (!isValidEmail(email)) {
       throw new Error('Email inválido');
     }
@@ -115,8 +133,10 @@ class AuthService {
     }
 
     try {
+      console.log('[AuthService] signup - Calling authRepository.signup');
       // Criar usuário (HTTP já retorna dados provisionados, Fake precisa provisionar)
       const result = await authRepository.signup(email, password, userData);
+      console.log('[AuthService] signup - authRepository.signup returned:', result);
 
       // Se já retornou dados provisionados (HTTP), usar direto
       // Se não (Fake), provisionar localmente
@@ -166,14 +186,25 @@ class AuthService {
     }
 
     try {
+      // Limpar cache antes de fazer login (pode ter dados de outro usuário)
+      const previousUser = this.currentUser;
+      if (previousUser) {
+        console.log('[AuthService] login - Clearing cache from previous user:', previousUser.uid);
+        cacheManager.clear();
+      }
+      
       const user = await authRepository.login(email, password);
       this.currentUser = user;
+      
+      // Limpar cache novamente após login para garantir que não há dados antigos
+      cacheManager.clear();
       
       // Salvar no localStorage para HTTP
       if (user && typeof Storage !== 'undefined') {
         localStorage.setItem('financeiro_current_user', JSON.stringify(user));
       }
       
+      console.log('[AuthService] login - User logged in:', user.uid);
       return user;
     } catch (error) {
       throw error;

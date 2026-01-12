@@ -19,16 +19,27 @@ export function Banks({ user }) {
   });
 
   useEffect(() => {
-    loadBanks();
-  }, []);
+    if (user?.uid) {
+      loadBanks();
+    } else {
+      setBanks([]);
+      setLoading(false);
+    }
+  }, [user?.uid]);
 
   const loadBanks = async () => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
-      const banksList = await accountService.getAll(user?.uid);
+      const banksList = await accountService.getAll(user.uid);
       setBanks(banksList);
     } catch (error) {
       console.error("Error loading banks:", error);
+      setBanks([]);
     } finally {
       setLoading(false);
     }
