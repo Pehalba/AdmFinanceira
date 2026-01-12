@@ -32,6 +32,32 @@ jobs:
         run: |
           npm ci || npm install
 
+      - name: Create firebase.config.js
+        run: |
+          cat > firebase.config.js << 'EOF'
+          import { initializeApp } from 'firebase/app';
+          import { getFirestore } from 'firebase/firestore';
+          import { getAuth } from 'firebase/auth';
+
+          const firebaseConfig = {
+            apiKey: "AIzaSyC-FjynqdQmyupYNq7vESPo1OE4ZT0T4O4",
+            authDomain: "adm-financeira-e14eb.firebaseapp.com",
+            projectId: "adm-financeira-e14eb",
+            storageBucket: "adm-financeira-e14eb.firebasestorage.app",
+            messagingSenderId: "832363826760",
+            appId: "1:832363826760:web:bf56defa3566492f95d27d",
+            measurementId: "G-X1GN0351XR"
+          };
+
+          const app = initializeApp(firebaseConfig);
+          export const db = getFirestore(app);
+          export const auth = getAuth(app);
+
+          console.log('[Firebase] Firebase inicializado com sucesso!');
+          console.log('[Firebase] Project ID:', firebaseConfig.projectId);
+          EOF
+          echo "✅ firebase.config.js created"
+
       - name: Build
         env:
           GITHUB_PAGES: 'true'
