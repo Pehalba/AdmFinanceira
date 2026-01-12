@@ -26,22 +26,43 @@ export function Dashboard({ user }) {
   // Recarregar dashboard quando a página ganhar foco (usuário volta da página de transações)
   useEffect(() => {
     const handleFocus = () => {
+      console.log('[Dashboard] Page gained focus, reloading dashboard');
       loadDashboard();
     };
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('[Dashboard] Page became visible, reloading dashboard');
+        loadDashboard();
+      }
+    };
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [selectedMonth, user?.uid]);
 
   const loadDashboard = async () => {
+    if (!user?.uid) {
+      console.log('[Dashboard] loadDashboard - No user, skipping');
+      return;
+    }
+    console.log('[Dashboard] loadDashboard - Loading for month:', selectedMonth, 'uid:', user.uid);
     setLoading(true);
     try {
       const [dashboardData, upcomingPayables] = await Promise.all([
         dashboardService.getDashboardData(selectedMonth),
         payableService.getUpcoming(15, 10, user?.uid),
       ]);
+      console.log('[Dashboard] loadDashboard - Data loaded:', {
+        totalIncome: dashboardData.monthlySummary?.totalIncome,
+        totalExpense: dashboardData.monthlySummary?.totalExpense,
+        balance: dashboardData.monthlySummary?.balance
+      });
       setData({ ...dashboardData, upcomingPayables });
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error('[Dashboard] loadDashboard - Error loading dashboard:', error);
     } finally {
       setLoading(false);
     }

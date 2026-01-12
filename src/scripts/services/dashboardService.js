@@ -46,7 +46,9 @@ class DashboardService {
    * Chamado após criar/atualizar/deletar transações
    */
   async calculateMonthlySummary(monthKey) {
+    console.log('[DashboardService] calculateMonthlySummary - Starting for monthKey:', monthKey);
     const transactions = await transactionRepository.getByMonth(monthKey, 1000);
+    console.log('[DashboardService] calculateMonthlySummary - Found', transactions.length, 'transactions');
 
     const summary = {
       totalIncome: 0,
@@ -110,8 +112,16 @@ class DashboardService {
 
     summary.balance = summary.totalIncome - summary.totalExpense;
 
+    console.log('[DashboardService] calculateMonthlySummary - Calculated summary:', {
+      totalIncome: summary.totalIncome,
+      totalExpense: summary.totalExpense,
+      balance: summary.balance,
+      transactionCount: summary.transactionCount
+    });
+
     // Salvar resumo
-    await monthlySummaryRepository.upsert(monthKey, summary);
+    const saved = await monthlySummaryRepository.upsert(monthKey, summary);
+    console.log('[DashboardService] calculateMonthlySummary - Summary saved:', saved?.id);
 
     return summary;
   }
