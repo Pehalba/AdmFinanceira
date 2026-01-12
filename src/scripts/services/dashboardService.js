@@ -31,7 +31,20 @@ class DashboardService {
     const recurringBills = await recurringBillRepository.getActive(10);
 
     // 3) Opcional: últimas transações (1 leitura, limit 10)
-    const recentTransactions = await transactionRepository.getRecent(10);
+    // Se getRecent falhar (falta índice), usar getByMonth como fallback
+    let recentTransactions = [];
+    try {
+      recentTransactions = await transactionRepository.getRecent(10);
+    } catch (error) {
+      console.warn('[DashboardService] getRecent failed (missing index?), using getByMonth as fallback:', error.message);
+      // Fallback: buscar transações do mês atual
+      try {
+        recentTransactions = await transactionRepository.getByMonth(targetMonth, 10);
+      } catch (fallbackError) {
+        console.error('[DashboardService] getByMonth fallback also failed:', fallbackError);
+        recentTransactions = [];
+      }
+    }
 
     return {
       monthKey: targetMonth,
