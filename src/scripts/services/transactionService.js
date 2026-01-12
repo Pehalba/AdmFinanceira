@@ -12,23 +12,37 @@ class TransactionService {
    * Denormaliza accountName e categoryName
    */
   async create(transactionData) {
+    console.log('[TransactionService] create - Received transactionData:', transactionData);
+    
     let date;
     if (transactionData.date instanceof Date) {
       date = transactionData.date;
+      console.log('[TransactionService] create - Date is already a Date object:', date);
     } else if (typeof transactionData.date === 'string') {
+      console.log('[TransactionService] create - Date is string:', transactionData.date);
       // Se for string no formato YYYY-MM-DD, criar Date no timezone local
       if (transactionData.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [year, month, day] = transactionData.date.split('-').map(Number);
+        console.log('[TransactionService] create - Parsing YYYY-MM-DD:', { year, month, day });
         date = new Date(year, month - 1, day); // month - 1 porque Date usa 0-11
+        console.log('[TransactionService] create - Created Date (local):', date);
+        console.log('[TransactionService] create - Date.getFullYear():', date.getFullYear());
+        console.log('[TransactionService] create - Date.getMonth():', date.getMonth());
+        console.log('[TransactionService] create - Date.getDate():', date.getDate());
       } else {
+        console.log('[TransactionService] create - Not YYYY-MM-DD format, using new Date()');
         date = new Date(transactionData.date);
       }
     } else {
+      console.log('[TransactionService] create - Date is other type, using new Date()');
       date = new Date(transactionData.date);
     }
     
-    console.log('[TransactionService] create - Processing date:', transactionData.date, '->', date, 'monthKey:', getMonthKey(date));
     const monthKey = getMonthKey(date);
+    console.log('[TransactionService] create - Final date:', date);
+    console.log('[TransactionService] create - Calculated monthKey:', monthKey);
+    console.log('[TransactionService] create - Date.getFullYear():', date.getFullYear());
+    console.log('[TransactionService] create - Date.getMonth() + 1:', date.getMonth() + 1);
 
     // Buscar account e category para denormalizar (accountId pode ser opcional)
     const [account, category] = await Promise.all([

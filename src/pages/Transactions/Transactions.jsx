@@ -107,6 +107,10 @@ export function Transactions({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log('[Transactions] handleSubmit - Form data:', formData);
+      console.log('[Transactions] handleSubmit - Selected month:', selectedMonth);
+      console.log('[Transactions] handleSubmit - Form date:', formData.date);
+      
       if (editingId) {
         // Atualizar transação existente
         await transactionService.update(editingId, {
@@ -115,6 +119,7 @@ export function Transactions({ user }) {
         });
       } else {
         // Criar nova transação
+        console.log('[Transactions] handleSubmit - Creating transaction with date:', formData.date);
         await transactionService.create({
           ...formData,
           amount: parseFloat(formData.amount),
