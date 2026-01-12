@@ -35,7 +35,13 @@ export function Transactions({ user }) {
     type: "expense",
     accountId: "",
     categoryId: "",
-    date: new Date().toISOString().split("T")[0],
+    date: (() => {
+      // Usar primeiro dia do mês selecionado ou mês atual
+      const today = new Date();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = today.getFullYear();
+      return `${year}-${month}-01`;
+    })(),
   });
 
   useEffect(() => {
@@ -65,6 +71,12 @@ export function Transactions({ user }) {
   useEffect(() => {
     if (user?.uid) {
       loadData();
+      // Atualizar data do formulário para o primeiro dia do mês selecionado
+      if (selectedMonth) {
+        const [year, month] = selectedMonth.split("-");
+        const formDate = `${year}-${month}-01`;
+        setFormData(prev => ({ ...prev, date: formDate }));
+      }
     } else {
       // Limpar dados se não houver usuário
       setTransactions([]);

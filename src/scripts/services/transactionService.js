@@ -12,10 +12,22 @@ class TransactionService {
    * Denormaliza accountName e categoryName
    */
   async create(transactionData) {
-    const date = transactionData.date instanceof Date 
-      ? transactionData.date 
-      : new Date(transactionData.date);
+    let date;
+    if (transactionData.date instanceof Date) {
+      date = transactionData.date;
+    } else if (typeof transactionData.date === 'string') {
+      // Se for string no formato YYYY-MM-DD, criar Date no timezone local
+      if (transactionData.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = transactionData.date.split('-').map(Number);
+        date = new Date(year, month - 1, day); // month - 1 porque Date usa 0-11
+      } else {
+        date = new Date(transactionData.date);
+      }
+    } else {
+      date = new Date(transactionData.date);
+    }
     
+    console.log('[TransactionService] create - Processing date:', transactionData.date, '->', date, 'monthKey:', getMonthKey(date));
     const monthKey = getMonthKey(date);
 
     // Buscar account e category para denormalizar (accountId pode ser opcional)
