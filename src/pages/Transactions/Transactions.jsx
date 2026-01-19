@@ -443,10 +443,19 @@ export function Transactions({ user }) {
 
       {!showForm && (
         <Fab
-          onClick={() => {
-            setShowForm(true);
+          onClick={async () => {
             setEditingId(null);
+            // Garantir que os bancos estão carregados antes de abrir o formulário
+            if (banks.length === 0 && user?.uid) {
+              try {
+                const banksList = await accountService.getAll(user.uid, true);
+                setBanks(banksList || []);
+              } catch (error) {
+                console.error('[Transactions] Error loading banks:', error);
+              }
+            }
             resetForm();
+            setShowForm(true);
             // Scroll para o topo para ver o formulário
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
