@@ -71,6 +71,23 @@ class TransactionService {
 
     const created = await transactionRepository.create(transaction);
     
+    // Atualizar saldo da conta se accountId foi fornecido
+    if (transactionData.accountId && account) {
+      const currentBalance = account.balance || 0;
+      const transactionAmount = transactionData.amount || 0;
+      const newBalance = currentBalance + transactionAmount; // Receita soma, despesa subtrai (já vem negativo)
+      
+      const accountUid = account.uid || transactionData.uid;
+      if (accountUid) {
+        await accountRepository.update(transactionData.accountId, {
+          balance: newBalance,
+          uid: accountUid,
+        }).catch(err => {
+          console.error('Error updating account balance:', err);
+        });
+      }
+    }
+    
     // Recalcular resumo mensal após criar transação
     await dashboardService.calculateMonthlySummary(monthKey).catch(err => {
       console.error('Error calculating monthly summary:', err);
@@ -122,6 +139,59 @@ class TransactionService {
       categoryName,
     });
 
+    // Atualizar saldo da conta se necessário
+    const oldAmount = existingTransaction.amount || 0;
+    const newAmount = updates.amount !== undefined ? updates.amount : oldAmount;
+    const oldAccountId = existingTransaction.accountId;
+    const newAccountId = updates.accountId !== undefined ? updates.accountId : oldAccountId;
+    
+    // Se mudou a conta ou o valor, atualizar saldos
+    if (oldAccountId || newAccountId) {
+      // Reverter saldo da conta antiga (se mudou de conta)
+      if (oldAccountId && oldAccountId !== newAccountId) {
+        const oldAccount = await accountRepository.getById(oldAccountId).catch(() => null);
+        if (oldAccount) {
+          const oldBalance = oldAccount.balance || 0;
+          const revertedBalance = oldBalance - oldAmount; // Reverter transação antiga
+          const oldAccountUid = oldAccount.uid || existingTransaction.uid;
+          if (oldAccountUid) {
+            await accountRepository.update(oldAccountId, {
+              balance: revertedBalance,
+              uid: oldAccountUid,
+            }).catch(err => {
+              console.error('Error reverting old account balance:', err);
+            });
+          }
+        }
+      }
+      
+      // Atualizar saldo da conta nova (ou mesma conta se só mudou valor)
+      if (newAccountId) {
+        const newAccount = await accountRepository.getById(newAccountId).catch(() => null);
+        if (newAccount) {
+          let newBalance = newAccount.balance || 0;
+          
+          if (oldAccountId === newAccountId) {
+            // Mesma conta: ajustar diferença
+            newBalance = newBalance - oldAmount + newAmount;
+          } else {
+            // Conta diferente: adicionar novo valor
+            newBalance = newBalance + newAmount;
+          }
+          
+          const newAccountUid = newAccount.uid || existingTransaction.uid || updates.uid;
+          if (newAccountUid) {
+            await accountRepository.update(newAccountId, {
+              balance: newBalance,
+              uid: newAccountUid,
+            }).catch(err => {
+              console.error('Error updating new account balance:', err);
+            });
+          }
+        }
+      }
+    }
+
     // Recalcular resumos mensais (mês antigo e novo, se mudou)
     const monthKey = newMonthKey;
     await dashboardService.calculateMonthlySummary(monthKey).catch(err => {
@@ -142,13 +212,33 @@ class TransactionService {
    * Deleta transação
    */
   async delete(id) {
-    // Buscar transação antes de deletar para obter monthKey
+    // Buscar transação antes de deletar para obter monthKey e accountId
     const transaction = await this.getById(id);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
 
     const monthKey = transaction.monthKey;
+    
+    // Reverter saldo da conta se tinha accountId
+    if (transaction.accountId) {
+      const account = await accountRepository.getById(transaction.accountId).catch(() => null);
+      if (account) {
+        const currentBalance = account.balance || 0;
+        const transactionAmount = transaction.amount || 0;
+        const revertedBalance = currentBalance - transactionAmount; // Reverter: se era receita (+), subtrai; se era despesa (-), soma
+        
+        const accountUid = account.uid || transaction.uid;
+        if (accountUid) {
+          await accountRepository.update(transaction.accountId, {
+            balance: revertedBalance,
+            uid: accountUid,
+          }).catch(err => {
+            console.error('Error reverting account balance:', err);
+          });
+        }
+      }
+    }
     
     // Deletar transação
     await transactionRepository.delete(id);
