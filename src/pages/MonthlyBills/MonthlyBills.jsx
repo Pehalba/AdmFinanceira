@@ -187,20 +187,13 @@ export function MonthlyBills({ user }) {
       }
     } else {
       // Está desmarcando (marcando como não pago), não precisa de conta
-      await executeToggleStatus(statusId, monthKey, null, user.uid);
+      await executeToggleStatus(statusId, monthKey, null);
     }
   };
 
-  const executeToggleStatus = async (statusId, monthKey, accountId, uid = null) => {
-    if (!user?.uid && !uid) {
-      console.error('[MonthlyBills] executeToggleStatus - No uid available!');
-      return;
-    }
-    
-    // Usar uid do parâmetro ou do user
-    const finalUid = uid || user?.uid;
-    if (!finalUid) {
-      console.error('[MonthlyBills] executeToggleStatus - Cannot proceed without uid');
+  const executeToggleStatus = async (statusId, monthKey, accountId) => {
+    if (!user?.uid) {
+      console.error('[MonthlyBills] executeToggleStatus - No user.uid available!');
       return;
     }
     
@@ -230,21 +223,21 @@ export function MonthlyBills({ user }) {
       console.log('[MonthlyBills] executeToggleStatus - Calling toggleStatus:', {
         statusId,
         monthKey,
-        uid: finalUid,
+        uid: user.uid,
         accountId: accountId,
         hasAccountId: !!accountId,
-        hasUid: !!finalUid
+        hasUid: !!user.uid
       });
       
       if (!accountId && newStatus === 'paid') {
         console.warn('[MonthlyBills] executeToggleStatus - WARNING: Marking as paid without accountId!');
       }
       
-      if (!finalUid) {
+      if (!user.uid) {
         throw new Error('UID is required but not available');
       }
       
-      await payableService.toggleStatus(statusId, monthKey, finalUid, accountId);
+      await payableService.toggleStatus(statusId, monthKey, user.uid, accountId);
       console.log('[MonthlyBills] executeToggleStatus - Status toggled successfully');
       
       // Recarregar dados para garantir que tudo está atualizado
