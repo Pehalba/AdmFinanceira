@@ -75,7 +75,26 @@ class TransactionService {
     if (transactionData.accountId && account) {
       const currentBalance = account.balance || 0;
       const transactionAmount = transactionData.amount || 0;
-      const newBalance = currentBalance + transactionAmount; // Receita soma, despesa subtrai (já vem negativo)
+      
+      // Calcular novo saldo baseado no tipo da transação
+      // Receita: soma (valor positivo)
+      // Despesa: subtrai (valor positivo do formulário, mas deve subtrair do saldo)
+      let newBalance;
+      if (transactionData.type === 'income') {
+        // Receita: soma o valor positivo
+        newBalance = currentBalance + Math.abs(transactionAmount);
+      } else {
+        // Despesa: subtrai o valor (mesmo que venha positivo do formulário)
+        newBalance = currentBalance - Math.abs(transactionAmount);
+      }
+      
+      console.log('[TransactionService] create - Updating account balance:', {
+        accountId: transactionData.accountId,
+        currentBalance,
+        transactionAmount,
+        transactionType: transactionData.type,
+        newBalance,
+      });
       
       const accountUid = account.uid || transactionData.uid;
       if (accountUid) {
@@ -83,9 +102,19 @@ class TransactionService {
           balance: newBalance,
           uid: accountUid,
         }).catch(err => {
-          console.error('Error updating account balance:', err);
+          console.error('[TransactionService] create - Error updating account balance:', err);
+        });
+      } else {
+        console.warn('[TransactionService] create - No uid found for account update:', {
+          accountUid: account.uid,
+          transactionUid: transactionData.uid,
         });
       }
+    } else {
+      console.log('[TransactionService] create - Skipping account balance update:', {
+        hasAccountId: !!transactionData.accountId,
+        hasAccount: !!account,
+      });
     }
     
     // Recalcular resumo mensal após criar transação
@@ -142,24 +171,33 @@ class TransactionService {
     // Atualizar saldo da conta se necessário
     const oldAmount = existingTransaction.amount || 0;
     const newAmount = updates.amount !== undefined ? updates.amount : oldAmount;
+    const oldType = existingTransaction.type || 'expense';
+    const newType = updates.type !== undefined ? updates.type : oldType;
     const oldAccountId = existingTransaction.accountId;
     const newAccountId = updates.accountId !== undefined ? updates.accountId : oldAccountId;
     
     // Se mudou a conta ou o valor, atualizar saldos
     if (oldAccountId || newAccountId) {
-      // Reverter saldo da conta antiga (se mudou de conta)
-      if (oldAccountId && oldAccountId !== newAccountId) {
+      // Reverter saldo da conta antiga (se mudou de conta ou valor)
+      if (oldAccountId && (oldAccountId !== newAccountId || oldAmount !== newAmount || oldType !== newType)) {
         const oldAccount = await accountRepository.getById(oldAccountId).catch(() => null);
         if (oldAccount) {
           const oldBalance = oldAccount.balance || 0;
-          const revertedBalance = oldBalance - oldAmount; // Reverter transação antiga
+          // Reverter: se era receita, subtrai; se era despesa, soma
+          let revertedBalance;
+          if (oldType === 'income') {
+            revertedBalance = oldBalance - Math.abs(oldAmount);
+          } else {
+            revertedBalance = oldBalance + Math.abs(oldAmount);
+          }
+          
           const oldAccountUid = oldAccount.uid || existingTransaction.uid;
           if (oldAccountUid) {
             await accountRepository.update(oldAccountId, {
               balance: revertedBalance,
               uid: oldAccountUid,
             }).catch(err => {
-              console.error('Error reverting old account balance:', err);
+              console.error('[TransactionService] update - Error reverting old account balance:', err);
             });
           }
         }
@@ -172,11 +210,19 @@ class TransactionService {
           let newBalance = newAccount.balance || 0;
           
           if (oldAccountId === newAccountId) {
-            // Mesma conta: ajustar diferença
-            newBalance = newBalance - oldAmount + newAmount;
+            // Mesma conta: já revertemos acima, agora aplicar novo valor
+            if (newType === 'income') {
+              newBalance = newBalance + Math.abs(newAmount);
+            } else {
+              newBalance = newBalance - Math.abs(newAmount);
+            }
           } else {
-            // Conta diferente: adicionar novo valor
-            newBalance = newBalance + newAmount;
+            // Conta diferente: aplicar novo valor diretamente
+            if (newType === 'income') {
+              newBalance = newBalance + Math.abs(newAmount);
+            } else {
+              newBalance = newBalance - Math.abs(newAmount);
+            }
           }
           
           const newAccountUid = newAccount.uid || existingTransaction.uid || updates.uid;
@@ -185,7 +231,7 @@ class TransactionService {
               balance: newBalance,
               uid: newAccountUid,
             }).catch(err => {
-              console.error('Error updating new account balance:', err);
+              console.error('[TransactionService] update - Error updating new account balance:', err);
             });
           }
         }
@@ -226,7 +272,23 @@ class TransactionService {
       if (account) {
         const currentBalance = account.balance || 0;
         const transactionAmount = transaction.amount || 0;
-        const revertedBalance = currentBalance - transactionAmount; // Reverter: se era receita (+), subtrai; se era despesa (-), soma
+        const transactionType = transaction.type || 'expense';
+        
+        // Reverter: se era receita, subtrai; se era despesa, soma
+        let revertedBalance;
+        if (transactionType === 'income') {
+          revertedBalance = currentBalance - Math.abs(transactionAmount);
+        } else {
+          revertedBalance = currentBalance + Math.abs(transactionAmount);
+        }
+        
+        console.log('[TransactionService] delete - Reverting account balance:', {
+          accountId: transaction.accountId,
+          currentBalance,
+          transactionAmount,
+          transactionType,
+          revertedBalance,
+        });
         
         const accountUid = account.uid || transaction.uid;
         if (accountUid) {
@@ -234,7 +296,7 @@ class TransactionService {
             balance: revertedBalance,
             uid: accountUid,
           }).catch(err => {
-            console.error('Error reverting account balance:', err);
+            console.error('[TransactionService] delete - Error reverting account balance:', err);
           });
         }
       }
