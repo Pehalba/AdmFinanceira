@@ -29,53 +29,11 @@ export function Navbar({ user, onLogout }) {
   return (
     <nav className="navbar">
       <div className="navbar__container">
-        <Link to="/" className="navbar__logo">
-          Financeiro
-        </Link>
-        {user && (
-          <>
-            <div className="navbar__links">
-              <Link
-                to="/"
-                className={`navbar__link ${
-                  isActive("/") ? "navbar__link--active" : ""
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/transactions"
-                className={`navbar__link ${
-                  isActive("/transactions") ? "navbar__link--active" : ""
-                }`}
-              >
-                Transações
-              </Link>
-              <Link
-                to="/banks"
-                className={`navbar__link ${
-                  isActive("/banks") ? "navbar__link--active" : ""
-                }`}
-              >
-                Bancos
-              </Link>
-              <Link
-                to="/categories"
-                className={`navbar__link ${
-                  isActive("/categories") ? "navbar__link--active" : ""
-                }`}
-              >
-                Categorias
-              </Link>
-              <Link
-                to="/monthly-bills"
-                className={`navbar__link ${
-                  isActive("/monthly-bills") ? "navbar__link--active" : ""
-                }`}
-              >
-                Despesas
-              </Link>
-            </div>
+        <div className="navbar__top">
+          <Link to="/" className="navbar__logo">
+            Financeiro
+          </Link>
+          {user && (
             <div className="navbar__user" ref={profileMenuRef}>
               <button
                 className="navbar__profile-button"
@@ -114,7 +72,51 @@ export function Navbar({ user, onLogout }) {
                 </div>
               )}
             </div>
-          </>
+          )}
+        </div>
+        {user && (
+          <div className="navbar__links">
+            <Link
+              to="/"
+              className={`navbar__link ${
+                isActive("/") ? "navbar__link--active" : ""
+              }`}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/transactions"
+              className={`navbar__link ${
+                isActive("/transactions") ? "navbar__link--active" : ""
+              }`}
+            >
+              Transações
+            </Link>
+            <Link
+              to="/banks"
+              className={`navbar__link ${
+                isActive("/banks") ? "navbar__link--active" : ""
+              }`}
+            >
+              Bancos
+            </Link>
+            <Link
+              to="/categories"
+              className={`navbar__link ${
+                isActive("/categories") ? "navbar__link--active" : ""
+              }`}
+            >
+              Categorias
+            </Link>
+            <Link
+              to="/monthly-bills"
+              className={`navbar__link ${
+                isActive("/monthly-bills") ? "navbar__link--active" : ""
+              }`}
+            >
+              Despesas
+            </Link>
+          </div>
         )}
       </div>
     </nav>
