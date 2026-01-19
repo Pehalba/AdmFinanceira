@@ -105,6 +105,19 @@ class AccountService {
   }
 
   /**
+   * Remove o status de principal de uma conta
+   */
+  async removePrimaryAccount(accountId, uid) {
+    await accountRepository.update(accountId, {
+      isPrimary: false,
+      uid: uid,
+    });
+    
+    // Invalidar cache
+    await this.invalidateCache(uid);
+  }
+
+  /**
    * Recalcula o saldo de todas as contas do usuário baseado em todas as transações
    * Útil para corrigir saldos incorretos após deletar transações
    */

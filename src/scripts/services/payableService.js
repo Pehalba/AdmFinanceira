@@ -301,6 +301,7 @@ class PayableService {
       : (template.amount || 0);
     
     // Criar transação automática com accountId (transactionService.create() já atualiza o saldo)
+    console.log('[PayableService] markAsPaid - Creating transaction with accountId:', accountId);
     const transaction = await transactionService.create({
       uid,
       type: 'expense',
@@ -314,6 +315,7 @@ class PayableService {
       autoCreated: true, // Marca como criada automaticamente
       linkedPayableStatusId: statusId, // Link para status
     });
+    console.log('[PayableService] markAsPaid - Transaction created:', transaction.id, 'with accountId:', transaction.accountId);
 
     // Atualizar status
     return await monthlyExpenseStatusRepository.update(statusId, {

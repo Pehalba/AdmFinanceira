@@ -45,10 +45,18 @@ class TransactionService {
     console.log('[TransactionService] create - Date.getDate():', date.getDate());
 
     // Buscar account e category para denormalizar (accountId pode ser opcional)
+    console.log('[TransactionService] create - Fetching account and category:', {
+      accountId: transactionData.accountId,
+      categoryId: transactionData.categoryId
+    });
     const [account, category] = await Promise.all([
-      transactionData.accountId ? accountRepository.getById(transactionData.accountId).catch(() => null) : Promise.resolve(null),
+      transactionData.accountId ? accountRepository.getById(transactionData.accountId).catch((err) => {
+        console.error('[TransactionService] create - Error fetching account:', err);
+        return null;
+      }) : Promise.resolve(null),
       transactionData.categoryId ? categoryRepository.getById(transactionData.categoryId).catch(() => null) : Promise.resolve(null),
     ]);
+    console.log('[TransactionService] create - Account found:', account ? { id: account.id, name: account.name, balance: account.balance } : 'null');
 
     // IMPORTANTE: Calcular monthKey ANTES de converter para ISO string
     // A conversão para ISO pode mudar o mês devido ao timezone

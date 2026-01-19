@@ -85,6 +85,17 @@ export function Banks({ user }) {
     }
   };
 
+  const handleRemovePrimary = async (id) => {
+    try {
+      await accountService.removePrimaryAccount(id, user.uid);
+      loadBanks();
+      alert("Conta removida como principal com sucesso!");
+    } catch (error) {
+      console.error("Error removing primary account:", error);
+      alert("Erro ao remover conta como principal");
+    }
+  };
+
   const handleRecalculateBalances = async () => {
     if (!confirm("Isso irá recalcular o saldo de todas as contas baseado nas transações existentes. Deseja continuar?")) return;
     
@@ -202,9 +213,18 @@ export function Banks({ user }) {
                   </Button>
                 )}
                 {bank.isPrimary && (
-                  <div className="banks__card-primary-info">
-                    Esta conta será usada automaticamente para pagar despesas mensais
-                  </div>
+                  <>
+                    <div className="banks__card-primary-info">
+                      Esta conta será usada automaticamente para pagar despesas mensais
+                    </div>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleRemovePrimary(bank.id)}
+                      className="banks__card-remove-primary"
+                    >
+                      Remover como Principal
+                    </Button>
+                  </>
                 )}
               </div>
             </Card>

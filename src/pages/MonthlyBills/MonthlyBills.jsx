@@ -160,12 +160,15 @@ export function MonthlyBills({ user }) {
     if (currentPayable.status === 'open') {
       // Buscar banco principal
       const primaryAccount = await accountService.getPrimaryAccount(user.uid);
+      console.log('[MonthlyBills] handleToggleStatus - Primary account:', primaryAccount);
       
       if (primaryAccount) {
         // Tem banco principal, usar automaticamente
+        console.log('[MonthlyBills] handleToggleStatus - Using primary account:', primaryAccount.id, primaryAccount.name);
         await executeToggleStatus(statusId, monthKey, primaryAccount.id);
       } else {
         // Não tem banco principal, mostrar modal para selecionar
+        console.log('[MonthlyBills] handleToggleStatus - No primary account, showing modal');
         setPendingStatusId(statusId);
         setPendingMonthKey(monthKey);
         setShowAccountModal(true);
@@ -202,7 +205,9 @@ export function MonthlyBills({ user }) {
     
     try {
       // Fazer a chamada à API em background
+      console.log('[MonthlyBills] executeToggleStatus - Calling toggleStatus with accountId:', accountId);
       await payableService.toggleStatus(statusId, monthKey, user.uid, accountId);
+      console.log('[MonthlyBills] executeToggleStatus - Status toggled successfully');
       // Não precisa recarregar tudo, apenas atualizar o item se necessário
       // O dashboard será recalculado automaticamente pela criação/deleção da transação
     } catch (error) {
