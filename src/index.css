@@ -12,6 +12,9 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Suporte para safe-area no iPhone */
+  padding-top: env(safe-area-inset-top);
+  background-color: #111827;
 }
 
 body {
@@ -22,6 +25,7 @@ body {
   color: #111827;
   background-color: #f9fafb;
   min-height: 100vh;
+  min-height: calc(100vh - env(safe-area-inset-top));
   overflow-x: hidden; /* Evitar scroll horizontal */
   position: relative; /* Garantir contexto para elementos fixed */
 }
