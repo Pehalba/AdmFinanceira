@@ -146,12 +146,27 @@ export class FirestoreAuthRepository extends IAuthRepository {
       return user;
     } catch (error) {
       console.error("[FirestoreAuthRepository] login error:", error);
+      console.error("[FirestoreAuthRepository] login error code:", error.code);
+      console.error("[FirestoreAuthRepository] login error message:", error.message);
+      
+      // Firebase pode retornar diferentes códigos para credenciais inválidas
       if (
         error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password"
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/invalid-email"
       ) {
-        throw new Error("Invalid email or password");
+        throw new Error("Email ou senha incorretos");
       }
+      
+      // Outros erros do Firebase Auth
+      if (error.code === "auth/too-many-requests") {
+        throw new Error("Muitas tentativas. Tente novamente mais tarde");
+      }
+      if (error.code === "auth/network-request-failed") {
+        throw new Error("Erro de conexão. Verifique sua internet");
+      }
+      
       throw error;
     }
   }
