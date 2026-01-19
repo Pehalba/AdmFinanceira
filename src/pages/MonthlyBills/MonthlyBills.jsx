@@ -16,6 +16,8 @@ export function MonthlyBills({ user }) {
   const [showForm, setShowForm] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(getMonthKey(new Date()));
   const [editingTemplateId, setEditingTemplateId] = useState(null);
+  const [editingAmountId, setEditingAmountId] = useState(null);
+  const [editingAmountValue, setEditingAmountValue] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -165,6 +167,36 @@ export function MonthlyBills({ user }) {
     } catch (error) {
       console.error("Error deleting template:", error);
       alert("Erro ao excluir despesa mensal: " + (error.message || "Erro desconhecido"));
+    }
+  };
+
+  const handleStartEditAmount = (payable) => {
+    setEditingAmountId(payable.id);
+    setEditingAmountValue(payable.amount?.toString() || "0");
+  };
+
+  const handleCancelEditAmount = () => {
+    setEditingAmountId(null);
+    setEditingAmountValue("");
+  };
+
+  const handleSaveAmount = async (payable) => {
+    if (!user?.uid) return;
+    
+    const newAmount = parseFloat(editingAmountValue);
+    if (isNaN(newAmount) || newAmount < 0) {
+      alert("Valor inválido");
+      return;
+    }
+
+    try {
+      await payableService.updateAmount(payable.id, newAmount, payable.monthKey, user.uid);
+      setEditingAmountId(null);
+      setEditingAmountValue("");
+      loadData(); // Recarregar para atualizar a lista
+    } catch (error) {
+      console.error("Error updating amount:", error);
+      alert("Erro ao atualizar valor: " + (error.message || "Erro desconhecido"));
     }
   };
 
@@ -348,9 +380,57 @@ export function MonthlyBills({ user }) {
                     <strong className="monthly-bills__item-title">
                       {payable.title || "Sem título"}
                     </strong>
-                    <div className="monthly-bills__item-amount">
-                      {formatCurrency(payable.amount || 0)}
-                    </div>
+                    {editingAmountId === payable.id ? (
+                      <div className="monthly-bills__item-amount-edit">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editingAmountValue}
+                          onChange={(e) => setEditingAmountValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveAmount(payable);
+                            } else if (e.key === 'Escape') {
+                              handleCancelEditAmount();
+                            }
+                          }}
+                          autoFocus
+                          className="monthly-bills__amount-input"
+                        />
+                        <div className="monthly-bills__amount-actions">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveAmount(payable)}
+                            className="monthly-bills__amount-save"
+                            title="Salvar (Enter)"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelEditAmount}
+                            className="monthly-bills__amount-cancel"
+                            title="Cancelar (Esc)"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="monthly-bills__item-amount monthly-bills__item-amount--editable"
+                        onClick={() => handleStartEditAmount(payable)}
+                        title="Clique para editar o valor"
+                      >
+                        {formatCurrency(payable.amount || 0)}
+                        {payable.amountOverride !== undefined && payable.amountOverride !== null && (
+                          <span className="monthly-bills__amount-override-indicator" title="Valor personalizado para este mês">
+                            *
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="monthly-bills__item-meta">
                     <span>Vencimento: dia {payable.dueDay || 10}</span>

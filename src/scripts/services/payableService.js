@@ -164,11 +164,17 @@ class PayableService {
           dueDate = new Date(year, month - 1, 10); // Fallback para dia 10
         }
         
+        // Usar amountOverride do status se existir, senão usar o valor do template
+        const amount = (status?.amountOverride !== undefined && status?.amountOverride !== null) 
+          ? status.amountOverride 
+          : (template.amount || 0);
+        
         return {
           id: status?.id || null, // ID do status (para atualizações)
           templateId: template.id,
           title: template.title || '',
-          amount: template.amount || 0,
+          amount: amount,
+          amountOverride: status?.amountOverride, // Incluir para saber se foi sobrescrito
           dueDay: template.dueDay || 10,
           dueDate: dueDate.toISOString(),
           categoryId: template.categoryId || '',
@@ -262,13 +268,18 @@ class PayableService {
     const day = template.dueDay || 10;
     const dueDate = new Date(year, month - 1, day);
     
+    // Usar amountOverride se existir, senão usar o valor do template
+    const amount = (status.amountOverride !== undefined && status.amountOverride !== null)
+      ? status.amountOverride
+      : (template.amount || 0);
+    
     // Criar transação automática (transactionService.create() já recalcula o dashboard)
     // Não precisa de accountId (removido do modelo)
     const transaction = await transactionService.create({
       uid,
       type: 'expense',
       description: template.title,
-      amount: -Math.abs(template.amount), // Negativo para despesa
+      amount: -Math.abs(amount), // Negativo para despesa
       date: dueDate.toISOString(),
       monthKey,
       categoryId: template.categoryId || '',
@@ -336,6 +347,51 @@ class PayableService {
     } else {
       return await this.markAsPaid(statusId, monthKey, uid);
     }
+  }
+
+  /**
+   * Atualiza o valor da despesa para o mês específico
+   * Sobrescreve o valor do template apenas para este mês
+   */
+  async updateAmount(statusId, newAmount, monthKey, uid) {
+    if (!statusId) {
+      throw new Error('Status ID is required');
+    }
+    
+    const status = await monthlyExpenseStatusRepository.getById(statusId);
+    if (!status) {
+      throw new Error('Status not found');
+    }
+
+    const amount = parseFloat(newAmount);
+    if (isNaN(amount) || amount < 0) {
+      throw new Error('Valor inválido');
+    }
+
+    // Atualizar status com amountOverride
+    const updatedStatus = await monthlyExpenseStatusRepository.update(statusId, {
+      amountOverride: amount,
+      uid, // Necessário para o update
+    });
+
+    // Se a despesa já está paga e tem transação vinculada, atualizar a transação também
+    if (status.status === 'paid' && status.linkedTransactionId) {
+      try {
+        const transaction = await transactionRepository.getById(status.linkedTransactionId);
+        if (transaction && transaction.autoCreated) {
+          // Atualizar valor da transação (usar valor negativo para despesa)
+          await transactionRepository.update(status.linkedTransactionId, {
+            amount: -Math.abs(amount),
+            uid,
+          });
+        }
+      } catch (error) {
+        console.warn('Error updating linked transaction:', error);
+        // Não falhar se não conseguir atualizar a transação
+      }
+    }
+
+    return updatedStatus;
   }
 
   /**
