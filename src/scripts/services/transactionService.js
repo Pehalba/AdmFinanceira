@@ -81,54 +81,91 @@ class TransactionService {
     const created = await transactionRepository.create(transaction);
     
     // Atualizar saldo da conta se accountId foi fornecido
-    if (transactionData.accountId && account) {
-      const currentBalance = account.balance || 0;
-      const transactionAmount = transactionData.amount || 0;
-      
-      // Calcular novo saldo baseado no tipo da transação
-      // Receita: soma (valor positivo)
-      // Despesa: subtrai (valor positivo do formulário, mas deve subtrair do saldo)
-      let newBalance;
-      if (transactionData.type === 'income') {
-        // Receita: soma o valor positivo
-        newBalance = currentBalance + Math.abs(transactionAmount);
+    if (transactionData.accountId) {
+      if (!account) {
+        console.error('[TransactionService] create - AccountId provided but account not found:', transactionData.accountId);
+        // Tentar buscar novamente com uid explícito
+        try {
+          const retryAccount = await accountRepository.getById(transactionData.accountId);
+          if (retryAccount) {
+            console.log('[TransactionService] create - Account found on retry:', retryAccount.id);
+            // Usar a conta encontrada no retry
+            const currentBalance = retryAccount.balance || 0;
+            const transactionAmount = transactionData.amount || 0;
+            
+            let newBalance;
+            if (transactionData.type === 'income') {
+              newBalance = currentBalance + Math.abs(transactionAmount);
+            } else {
+              newBalance = currentBalance - Math.abs(transactionAmount);
+            }
+            
+            const accountUid = retryAccount.uid || transactionData.uid;
+            if (accountUid) {
+              await accountRepository.update(transactionData.accountId, {
+                balance: newBalance,
+                uid: accountUid,
+              });
+              await accountService.invalidateCache(accountUid).catch(() => {});
+            }
+          } else {
+            console.error('[TransactionService] create - Account still not found after retry');
+          }
+        } catch (retryError) {
+          console.error('[TransactionService] create - Error retrying account fetch:', retryError);
+        }
       } else {
-        // Despesa: subtrai o valor (mesmo que venha positivo do formulário)
-        newBalance = currentBalance - Math.abs(transactionAmount);
-      }
-      
-      console.log('[TransactionService] create - Updating account balance:', {
-        accountId: transactionData.accountId,
-        currentBalance,
-        transactionAmount,
-        transactionType: transactionData.type,
-        newBalance,
-      });
-      
-      const accountUid = account.uid || transactionData.uid;
-      if (accountUid) {
-        await accountRepository.update(transactionData.accountId, {
-          balance: newBalance,
-          uid: accountUid,
-        }).catch(err => {
-          console.error('[TransactionService] create - Error updating account balance:', err);
+        // Conta foi encontrada normalmente
+        const currentBalance = account.balance || 0;
+        const transactionAmount = transactionData.amount || 0;
+        
+        // Calcular novo saldo baseado no tipo da transação
+        let newBalance;
+        if (transactionData.type === 'income') {
+          // Receita: soma o valor positivo
+          newBalance = currentBalance + Math.abs(transactionAmount);
+        } else {
+          // Despesa: subtrai o valor (mesmo que venha positivo do formulário)
+          newBalance = currentBalance - Math.abs(transactionAmount);
+        }
+        
+        console.log('[TransactionService] create - Updating account balance:', {
+          accountId: transactionData.accountId,
+          accountName: account.name,
+          currentBalance,
+          transactionAmount,
+          transactionType: transactionData.type,
+          newBalance,
         });
         
-        // Invalidar cache de accounts para forçar recarregamento
-        await accountService.invalidateCache(accountUid).catch(err => {
-          console.error('[TransactionService] create - Error invalidating account cache:', err);
-        });
-      } else {
-        console.warn('[TransactionService] create - No uid found for account update:', {
-          accountUid: account.uid,
-          transactionUid: transactionData.uid,
-        });
+        const accountUid = account.uid || transactionData.uid;
+        if (accountUid) {
+          const updateResult = await accountRepository.update(transactionData.accountId, {
+            balance: newBalance,
+            uid: accountUid,
+          }).catch(err => {
+            console.error('[TransactionService] create - Error updating account balance:', err);
+            throw err;
+          });
+          
+          console.log('[TransactionService] create - Account balance updated successfully:', {
+            accountId: transactionData.accountId,
+            newBalance: updateResult?.balance
+          });
+          
+          // Invalidar cache de accounts para forçar recarregamento
+          await accountService.invalidateCache(accountUid).catch(err => {
+            console.error('[TransactionService] create - Error invalidating account cache:', err);
+          });
+        } else {
+          console.warn('[TransactionService] create - No uid found for account update:', {
+            accountUid: account.uid,
+            transactionUid: transactionData.uid,
+          });
+        }
       }
     } else {
-      console.log('[TransactionService] create - Skipping account balance update:', {
-        hasAccountId: !!transactionData.accountId,
-        hasAccount: !!account,
-      });
+      console.log('[TransactionService] create - No accountId provided, skipping balance update');
     }
     
     // Recalcular resumo mensal após criar transação

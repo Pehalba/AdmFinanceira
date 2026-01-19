@@ -68,7 +68,9 @@ class AccountService {
    */
   async getPrimaryAccount(uid) {
     const accounts = await this.getAll(uid, false);
-    return accounts.find(acc => acc.isPrimary) || null;
+    const primary = accounts.find(acc => acc.isPrimary) || null;
+    console.log('[AccountService] getPrimaryAccount - Found primary account:', primary ? { id: primary.id, name: primary.name, balance: primary.balance } : 'null');
+    return primary;
   }
 
   /**

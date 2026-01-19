@@ -159,16 +159,28 @@ export function MonthlyBills({ user }) {
     // Se está marcando como pago, verificar se precisa selecionar conta
     if (currentPayable.status === 'open') {
       // Buscar banco principal
-      const primaryAccount = await accountService.getPrimaryAccount(user.uid);
-      console.log('[MonthlyBills] handleToggleStatus - Primary account:', primaryAccount);
-      
-      if (primaryAccount) {
-        // Tem banco principal, usar automaticamente
-        console.log('[MonthlyBills] handleToggleStatus - Using primary account:', primaryAccount.id, primaryAccount.name);
-        await executeToggleStatus(statusId, monthKey, primaryAccount.id);
-      } else {
-        // Não tem banco principal, mostrar modal para selecionar
-        console.log('[MonthlyBills] handleToggleStatus - No primary account, showing modal');
+      try {
+        const primaryAccount = await accountService.getPrimaryAccount(user.uid);
+        console.log('[MonthlyBills] handleToggleStatus - Primary account:', primaryAccount);
+        
+        if (primaryAccount && primaryAccount.id) {
+          // Tem banco principal, usar automaticamente
+          console.log('[MonthlyBills] handleToggleStatus - Using primary account:', {
+            id: primaryAccount.id,
+            name: primaryAccount.name,
+            balance: primaryAccount.balance
+          });
+          await executeToggleStatus(statusId, monthKey, primaryAccount.id);
+        } else {
+          // Não tem banco principal, mostrar modal para selecionar
+          console.log('[MonthlyBills] handleToggleStatus - No primary account, showing modal');
+          setPendingStatusId(statusId);
+          setPendingMonthKey(monthKey);
+          setShowAccountModal(true);
+        }
+      } catch (error) {
+        console.error('[MonthlyBills] handleToggleStatus - Error fetching primary account:', error);
+        // Em caso de erro, mostrar modal para selecionar
         setPendingStatusId(statusId);
         setPendingMonthKey(monthKey);
         setShowAccountModal(true);
