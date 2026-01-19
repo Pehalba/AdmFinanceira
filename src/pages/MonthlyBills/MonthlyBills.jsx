@@ -18,6 +18,7 @@ export function MonthlyBills({ user }) {
   const [editingTemplateId, setEditingTemplateId] = useState(null);
   const [editingAmountId, setEditingAmountId] = useState(null);
   const [editingAmountValue, setEditingAmountValue] = useState("");
+  const [togglingStatusId, setTogglingStatusId] = useState(null); // Para loading por item
 
   const [formData, setFormData] = useState({
     title: "",
@@ -145,15 +146,41 @@ export function MonthlyBills({ user }) {
 
   const handleToggleStatus = async (statusId, monthKey) => {
     if (!user?.uid) return;
+    if (togglingStatusId === statusId) return; // Evitar cliques duplos
+    
+    // Salvar estado anterior para rollback se necessário
+    const previousPayables = [...payables];
+    
+    // Encontrar o item atual para fazer rollback se necessário
+    const currentPayable = payables.find(p => p.id === statusId);
+    if (!currentPayable) return;
+    
+    // Atualização otimista: atualizar estado local imediatamente
+    const newStatus = currentPayable.status === 'paid' ? 'open' : 'paid';
+    const updatedPayables = payables.map(p => 
+      p.id === statusId 
+        ? { 
+            ...p, 
+            status: newStatus,
+            paidAtISO: newStatus === 'paid' ? new Date().toISOString() : null,
+          }
+        : p
+    );
+    setPayables(updatedPayables);
+    setTogglingStatusId(statusId);
     
     try {
+      // Fazer a chamada à API em background
       await payableService.toggleStatus(statusId, monthKey, user.uid);
-      // Recarregar dados para atualizar status e recálculo do dashboard
-      loadData();
-      // Recarregar também o dashboard se necessário (será feito pelo dashboard service ao recalcular)
+      // Não precisa recarregar tudo, apenas atualizar o item se necessário
+      // O dashboard será recalculado automaticamente pela criação/deleção da transação
     } catch (error) {
       console.error("Error toggling status:", error);
+      // Reverter para o estado anterior em caso de erro
+      setPayables(previousPayables);
       alert("Erro ao atualizar status: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setTogglingStatusId(null);
     }
   };
 
@@ -369,11 +396,15 @@ export function MonthlyBills({ user }) {
                     type="checkbox"
                     checked={payable.status === "paid"}
                     onChange={() => handleToggleStatus(payable.id, payable.monthKey)}
+                    disabled={togglingStatusId === payable.id}
                     className="monthly-bills__checkbox"
                     title={payable.status === "paid" 
                       ? "Marcar como não pago (remove transação automática)" 
                       : "Marcar como pago (cria transação automática)"}
                   />
+                  {togglingStatusId === payable.id && (
+                    <span className="monthly-bills__checkbox-loading">⏳</span>
+                  )}
                 </div>
                 <div className="monthly-bills__item-content">
                   <div className="monthly-bills__item-header">
