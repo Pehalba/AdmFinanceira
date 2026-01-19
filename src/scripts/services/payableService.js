@@ -408,11 +408,19 @@ class PayableService {
   /**
    * Toggle status paid/open
    */
-  async toggleStatus(statusId, monthKey, uid) {
+  async toggleStatus(statusId, monthKey, uid, accountId = null) {
     const status = await monthlyExpenseStatusRepository.getById(statusId);
     if (!status) {
       throw new Error('Status not found');
     }
+
+    console.log('[PayableService] toggleStatus - Toggling status:', {
+      statusId,
+      monthKey,
+      uid,
+      accountId,
+      currentStatus: status.status
+    });
 
     if (status.status === 'paid') {
       // Quando desmarca, precisa passar monthKey e uid
