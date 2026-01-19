@@ -6,6 +6,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   margin-top: 0;
+  z-index: 10;
 }
 
 /* Preencher área do notch com a cor do navbar */

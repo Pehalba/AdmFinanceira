@@ -43,7 +43,7 @@ body {
   position: relative; /* Garantir contexto para elementos fixed */
 }
 
-/* Preencher área da barra de status do iOS */
+/* Preencher área da barra de status do iOS - atrás do conteúdo */
 body::before {
   content: '';
   position: fixed;
@@ -52,7 +52,7 @@ body::before {
   right: 0;
   height: 44px; /* Altura padrão da barra de status do iOS */
   background-color: #111827;
-  z-index: 10000;
+  z-index: 1;
   pointer-events: none;
 }
 
