@@ -229,7 +229,7 @@ export function MonthlyBills({ user }) {
         console.warn('[MonthlyBills] executeToggleStatus - WARNING: Marking as paid without accountId!');
       }
       
-      await payableService.toggleStatus(statusId, monthKey, finalUid, accountId);
+      await payableService.toggleStatus(statusId, monthKey, user.uid, accountId);
       console.log('[MonthlyBills] executeToggleStatus - Status toggled successfully');
       
       // Recarregar dados para garantir que tudo está atualizado
