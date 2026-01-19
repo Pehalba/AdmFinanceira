@@ -91,21 +91,27 @@ export function Transactions({ user }) {
 
   // Quando os bancos forem carregados, pré-selecionar banco principal ou primeiro banco
   useEffect(() => {
-    if (banks.length > 0 && !editingId && !showForm) {
-      // Só pré-selecionar quando não estiver editando e o formulário não estiver aberto
-      // Isso evita sobrescrever quando o usuário está editando
+    if (banks.length > 0 && !editingId) {
+      // Pré-selecionar banco quando não estiver editando
       setFormData(prev => {
         if (!prev.accountId) {
           // Buscar banco principal primeiro
           const primaryBank = banks.find(bank => bank.isPrimary);
           // Se não houver principal, usar o primeiro banco
           const defaultBankId = primaryBank ? primaryBank.id : banks[0].id;
+          console.log('[Transactions] Pré-selecionando banco:', {
+            hasPrimary: !!primaryBank,
+            primaryBankId: primaryBank?.id,
+            primaryBankName: primaryBank?.name,
+            defaultBankId,
+            totalBanks: banks.length
+          });
           return { ...prev, accountId: defaultBankId };
         }
         return prev;
       });
     }
-  }, [banks, editingId, showForm]);
+  }, [banks, editingId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -171,6 +177,16 @@ export function Transactions({ user }) {
     if (banks.length > 0) {
       const primaryBank = banks.find(bank => bank.isPrimary);
       defaultAccountId = primaryBank ? primaryBank.id : banks[0].id;
+      console.log('[Transactions] resetForm - Pré-selecionando banco:', {
+        hasPrimary: !!primaryBank,
+        primaryBankId: primaryBank?.id,
+        primaryBankName: primaryBank?.name,
+        defaultAccountId,
+        totalBanks: banks.length,
+        allBanks: banks.map(b => ({ id: b.id, name: b.name, isPrimary: b.isPrimary }))
+      });
+    } else {
+      console.log('[Transactions] resetForm - Nenhum banco disponível');
     }
 
     setFormData({
