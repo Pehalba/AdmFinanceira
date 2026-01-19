@@ -4,8 +4,10 @@ import { Card } from "../../blocks/Card/Card";
 import { Input } from "../../blocks/Input/Input";
 import { Select } from "../../blocks/Select/Select";
 import { Fab } from "../../blocks/Fab/Fab";
+import { AccountSelectModal } from "../../blocks/AccountSelectModal/AccountSelectModal";
 import { payableService } from "../../scripts/services/payableService";
 import { categoryService } from "../../scripts/services/categoryService";
+import { accountService } from "../../scripts/services/accountService";
 import { formatCurrency, formatDate, getMonthKey } from "../../scripts/utils/dateUtils";
 import "./MonthlyBills.css";
 
@@ -19,6 +21,9 @@ export function MonthlyBills({ user }) {
   const [editingAmountId, setEditingAmountId] = useState(null);
   const [editingAmountValue, setEditingAmountValue] = useState("");
   const [togglingStatusId, setTogglingStatusId] = useState(null); // Para loading por item
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [pendingStatusId, setPendingStatusId] = useState(null);
+  const [pendingMonthKey, setPendingMonthKey] = useState(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -148,6 +153,32 @@ export function MonthlyBills({ user }) {
     if (!user?.uid) return;
     if (togglingStatusId === statusId) return; // Evitar cliques duplos
     
+    const currentPayable = payables.find(p => p.id === statusId);
+    if (!currentPayable) return;
+    
+    // Se está marcando como pago, verificar se precisa selecionar conta
+    if (currentPayable.status === 'open') {
+      // Buscar banco principal
+      const primaryAccount = await accountService.getPrimaryAccount(user.uid);
+      
+      if (primaryAccount) {
+        // Tem banco principal, usar automaticamente
+        await executeToggleStatus(statusId, monthKey, primaryAccount.id);
+      } else {
+        // Não tem banco principal, mostrar modal para selecionar
+        setPendingStatusId(statusId);
+        setPendingMonthKey(monthKey);
+        setShowAccountModal(true);
+      }
+    } else {
+      // Está desmarcando (marcando como não pago), não precisa de conta
+      await executeToggleStatus(statusId, monthKey, null);
+    }
+  };
+
+  const executeToggleStatus = async (statusId, monthKey, accountId) => {
+    if (!user?.uid) return;
+    
     // Salvar estado anterior para rollback se necessário
     const previousPayables = [...payables];
     
@@ -171,7 +202,7 @@ export function MonthlyBills({ user }) {
     
     try {
       // Fazer a chamada à API em background
-      await payableService.toggleStatus(statusId, monthKey, user.uid);
+      await payableService.toggleStatus(statusId, monthKey, user.uid, accountId);
       // Não precisa recarregar tudo, apenas atualizar o item se necessário
       // O dashboard será recalculado automaticamente pela criação/deleção da transação
     } catch (error) {
@@ -182,6 +213,15 @@ export function MonthlyBills({ user }) {
     } finally {
       setTogglingStatusId(null);
     }
+  };
+
+  const handleAccountSelect = async (account) => {
+    if (pendingStatusId && pendingMonthKey) {
+      await executeToggleStatus(pendingStatusId, pendingMonthKey, account.id);
+      setPendingStatusId(null);
+      setPendingMonthKey(null);
+    }
+    setShowAccountModal(false);
   };
 
   const handleDelete = async (templateId) => {
@@ -511,6 +551,18 @@ export function MonthlyBills({ user }) {
           </div>
         )}
       </Card>
+
+      <AccountSelectModal
+        isOpen={showAccountModal}
+        onClose={() => {
+          setShowAccountModal(false);
+          setPendingStatusId(null);
+          setPendingMonthKey(null);
+        }}
+        onSelect={handleAccountSelect}
+        title="Selecione a conta bancária para pagar esta despesa"
+        uid={user?.uid}
+      />
 
       {/* FAB: sempre visível quando o formulário não está aberto */}
       {!showForm ? (

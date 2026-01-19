@@ -64,6 +64,47 @@ class AccountService {
   }
 
   /**
+   * Obtém a conta principal do usuário
+   */
+  async getPrimaryAccount(uid) {
+    const accounts = await this.getAll(uid, false);
+    return accounts.find(acc => acc.isPrimary) || null;
+  }
+
+  /**
+   * Marca uma conta como principal
+   * Remove o status de principal de outras contas
+   */
+  async setPrimaryAccount(accountId, uid) {
+    // Buscar todas as contas
+    const accounts = await this.getAll(uid, true);
+    
+    // Remover isPrimary de todas as contas
+    const updatePromises = accounts.map(account => {
+      if (account.isPrimary && account.id !== accountId) {
+        return accountRepository.update(account.id, {
+          isPrimary: false,
+          uid: uid,
+        }).catch(err => {
+          console.error(`Error removing primary from account ${account.id}:`, err);
+        });
+      }
+      return Promise.resolve();
+    });
+    
+    await Promise.all(updatePromises);
+    
+    // Marcar a conta selecionada como principal
+    await accountRepository.update(accountId, {
+      isPrimary: true,
+      uid: uid,
+    });
+    
+    // Invalidar cache
+    await this.invalidateCache(uid);
+  }
+
+  /**
    * Recalcula o saldo de todas as contas do usuário baseado em todas as transações
    * Útil para corrigir saldos incorretos após deletar transações
    */

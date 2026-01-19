@@ -272,9 +272,9 @@ class PayableService {
 
   /**
    * Marca despesa como paga no mês
-   * Cria transação automática
+   * Cria transação automática e atualiza saldo da conta bancária
    */
-  async markAsPaid(statusId, monthKey, uid) {
+  async markAsPaid(statusId, monthKey, uid, accountId = null) {
     const status = await monthlyExpenseStatusRepository.getById(statusId);
     if (!status) {
       throw new Error('Status not found');
@@ -300,8 +300,7 @@ class PayableService {
       ? status.amountOverride
       : (template.amount || 0);
     
-    // Criar transação automática (transactionService.create() já recalcula o dashboard)
-    // Não precisa de accountId (removido do modelo)
+    // Criar transação automática com accountId (transactionService.create() já atualiza o saldo)
     const transaction = await transactionService.create({
       uid,
       type: 'expense',
@@ -311,9 +310,9 @@ class PayableService {
       monthKey,
       categoryId: template.categoryId || '',
       categoryName: template.categoryName || '',
+      accountId: accountId, // Conta bancária para descontar
       autoCreated: true, // Marca como criada automaticamente
       linkedPayableStatusId: statusId, // Link para status
-      // accountId não é mais necessário (removido do modelo)
     });
 
     // Atualizar status

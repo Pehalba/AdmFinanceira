@@ -1,0 +1,109 @@
+.account-select-modal__loading,
+.account-select-modal__empty {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.account-select-modal__empty-hint {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  color: #9ca3af;
+}
+
+.account-select-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.account-select-modal__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.account-select-modal__item:hover {
+  border-color: #3b82f6;
+  background: #f9fafb;
+}
+
+.account-select-modal__item--selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.account-select-modal__item--primary {
+  border-color: #10b981;
+}
+
+.account-select-modal__item--primary.account-select-modal__item--selected {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+.account-select-modal__item-content {
+  flex: 1;
+}
+
+.account-select-modal__item-name {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.account-select-modal__primary-badge {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  background: #10b981;
+  color: white;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.account-select-modal__item-meta {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.account-select-modal__item-radio {
+  margin-left: 1rem;
+}
+
+.account-select-modal__item-radio input[type="radio"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+
+.account-select-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .account-select-modal__item {
+    padding: 0.75rem;
+  }
+  
+  .account-select-modal__actions {
+    flex-direction: column-reverse;
+  }
+  
+  .account-select-modal__actions button {
+    width: 100%;
+  }
+}

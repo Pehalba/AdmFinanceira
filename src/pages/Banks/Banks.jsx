@@ -74,6 +74,17 @@ export function Banks({ user }) {
     }
   };
 
+  const handleSetPrimary = async (id) => {
+    try {
+      await accountService.setPrimaryAccount(id, user.uid);
+      loadBanks();
+      alert("Conta definida como principal com sucesso!");
+    } catch (error) {
+      console.error("Error setting primary account:", error);
+      alert("Erro ao definir conta como principal");
+    }
+  };
+
   const handleRecalculateBalances = async () => {
     if (!confirm("Isso irá recalcular o saldo de todas as contas baseado nas transações existentes. Deseja continuar?")) return;
     
@@ -162,7 +173,12 @@ export function Banks({ user }) {
           banks.map((bank) => (
             <Card key={bank.id} className="banks__card">
               <div className="banks__card-header">
-                <h3 className="banks__card-name">{bank.name}</h3>
+                <h3 className="banks__card-name">
+                  {bank.name}
+                  {bank.isPrimary && (
+                    <span className="banks__primary-badge">Principal</span>
+                  )}
+                </h3>
                 <Button
                   variant="danger"
                   onClick={() => handleDelete(bank.id)}
@@ -174,6 +190,22 @@ export function Banks({ user }) {
               <div className="banks__card-type">{bank.type}</div>
               <div className="banks__card-balance">
                 {formatCurrency(bank.balance || 0)}
+              </div>
+              <div className="banks__card-actions">
+                {!bank.isPrimary && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleSetPrimary(bank.id)}
+                    className="banks__card-primary"
+                  >
+                    Definir como Principal
+                  </Button>
+                )}
+                {bank.isPrimary && (
+                  <div className="banks__card-primary-info">
+                    Esta conta será usada automaticamente para pagar despesas mensais
+                  </div>
+                )}
               </div>
             </Card>
           ))
