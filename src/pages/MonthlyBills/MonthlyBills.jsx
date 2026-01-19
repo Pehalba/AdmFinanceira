@@ -187,7 +187,7 @@ export function MonthlyBills({ user }) {
       }
     } else {
       // Está desmarcando (marcando como não pago), não precisa de conta
-      await executeToggleStatus(statusId, monthKey, null);
+      await executeToggleStatus(statusId, monthKey, null, user.uid);
     }
   };
 
@@ -229,7 +229,7 @@ export function MonthlyBills({ user }) {
         console.warn('[MonthlyBills] executeToggleStatus - WARNING: Marking as paid without accountId!');
       }
       
-      await payableService.toggleStatus(statusId, monthKey, user.uid, accountId);
+      await payableService.toggleStatus(statusId, monthKey, finalUid, accountId);
       console.log('[MonthlyBills] executeToggleStatus - Status toggled successfully');
       
       // Recarregar dados para garantir que tudo está atualizado
