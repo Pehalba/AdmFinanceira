@@ -415,9 +415,10 @@ class PayableService {
     }
 
     if (status.status === 'paid') {
-      return await this.markAsOpen(statusId, uid);
+      // Quando desmarca, precisa passar monthKey e uid
+      return await this.markAsOpen(statusId, monthKey, uid);
     } else {
-      return await this.markAsPaid(statusId, monthKey, uid);
+      return await this.markAsPaid(statusId, monthKey, uid, accountId);
     }
   }
 
