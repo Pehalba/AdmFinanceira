@@ -166,8 +166,12 @@ export function Transactions({ user }) {
     const today = new Date();
     const formDate = today.toISOString().split("T")[0];
     
-    // Pré-selecionar o primeiro banco se existir
-    const defaultAccountId = banks.length > 0 ? banks[0].id : "";
+    // Buscar banco principal primeiro, se não houver, usar o primeiro banco
+    let defaultAccountId = "";
+    if (banks.length > 0) {
+      const primaryBank = banks.find(bank => bank.isPrimary);
+      defaultAccountId = primaryBank ? primaryBank.id : banks[0].id;
+    }
 
     setFormData({
       description: "",
