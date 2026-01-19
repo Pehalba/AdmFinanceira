@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../blocks/Button/Button';
 import { Input } from '../../blocks/Input/Input';
@@ -6,13 +6,28 @@ import { Card } from '../../blocks/Card/Card';
 import { authService } from '../../scripts/services/authService';
 import './Login.css';
 
+const REMEMBER_EMAIL_KEY = 'financeiro_remember_email';
+const REMEMBER_EMAIL_ENABLED_KEY = 'financeiro_remember_email_enabled';
+
 export function Login({ onLogin }) {
   const navigate = useNavigate();
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Carregar email salvo ao montar o componente
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    const rememberEnabled = localStorage.getItem(REMEMBER_EMAIL_ENABLED_KEY) === 'true';
+    
+    if (rememberEnabled && savedEmail) {
+      setEmail(savedEmail);
+      setRememberEmail(true);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +50,17 @@ export function Login({ onLogin }) {
       } else {
         const user = await authService.login(email, password);
         console.log('[Login] Login successful:', user);
+        
+        // Salvar email se "lembrar senha" estiver marcado
+        if (rememberEmail) {
+          localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+          localStorage.setItem(REMEMBER_EMAIL_ENABLED_KEY, 'true');
+        } else {
+          // Remover email salvo se desmarcar
+          localStorage.removeItem(REMEMBER_EMAIL_KEY);
+          localStorage.removeItem(REMEMBER_EMAIL_ENABLED_KEY);
+        }
+        
         if (onLogin) {
           onLogin(user);
         }
@@ -80,6 +106,16 @@ export function Login({ onLogin }) {
             required
             disabled={loading}
           />
+
+          <label className="login__remember">
+            <input
+              type="checkbox"
+              checked={rememberEmail}
+              onChange={(e) => setRememberEmail(e.target.checked)}
+              disabled={loading}
+            />
+            <span>Lembrar meu email</span>
+          </label>
 
           {error && <div className="login__error">{error}</div>}
 

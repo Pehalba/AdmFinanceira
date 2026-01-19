@@ -50,6 +50,7 @@ npm install firebase
 ### 6. Criar Arquivo de Configuração
 
 1. Copie o arquivo de exemplo:
+
    ```bash
    cp firebase.config.example.js firebase.config.js
    ```
@@ -57,17 +58,17 @@ npm install firebase
 2. Edite `firebase.config.js` e substitua as credenciais:
 
 ```javascript
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: 'SUA_API_KEY_AQUI',
-  authDomain: 'seu-projeto.firebaseapp.com',
-  projectId: 'seu-projeto-id',
-  storageBucket: 'seu-projeto.appspot.com',
-  messagingSenderId: '123456789',
-  appId: '1:123456789:web:abc123'
+  apiKey: "SUA_API_KEY_AQUI",
+  authDomain: "seu-projeto.firebaseapp.com",
+  projectId: "seu-projeto-id",
+  storageBucket: "seu-projeto.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abc123",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -85,59 +86,59 @@ No Firebase Console > Firestore Database > Regras, cole:
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // Helper function para verificar se usuário está autenticado
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     // Helper function para verificar se o usuário é o dono do documento
     function isOwner(uid) {
       return isAuthenticated() && request.auth.uid == uid;
     }
-    
+
     // Transações: apenas o dono pode ler/escrever, sempre filtrado por monthKey
     match /transactions/{transactionId} {
       allow read, write: if isOwner(resource.data.uid);
       allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
     }
-    
+
     // Accounts: subcollection de users
     match /users/{uid}/accounts/{accountId} {
       allow read, write: if isOwner(uid);
     }
-    
+
     // Categories: subcollection de users
     match /users/{uid}/categories/{categoryId} {
       allow read, write: if isOwner(uid);
     }
-    
+
     // Monthly Summaries: apenas leitura pelo dono, escrita apenas via Cloud Functions (ou manual)
     match /monthlySummaries/{monthKey} {
       allow read: if isAuthenticated();
       allow write: if false; // Escrita apenas via Cloud Functions ou admin
     }
-    
+
     // User Meta: apenas o dono pode ler/escrever
     match /users/{uid}/meta/app {
       allow read, write: if isOwner(uid);
     }
-    
+
     // Monthly Expense Templates: apenas o dono
     match /users/{uid}/monthlyExpenseTemplates/{templateId} {
       allow read, write: if isOwner(uid);
     }
-    
+
     // Monthly Expense Status: apenas o dono
     match /users/{uid}/monthlyExpenseStatus/{statusId} {
       allow read, write: if isOwner(uid);
     }
-    
+
     // Recurring Bills: apenas o dono
     match /users/{uid}/recurringBills/{billId} {
       allow read, write: if isOwner(uid);
     }
-    
+
     // Payables (deprecated): apenas o dono
     match /users/{uid}/payables/{payableId} {
       allow read, write: if isOwner(uid);

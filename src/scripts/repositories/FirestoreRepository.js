@@ -53,10 +53,16 @@ export class FirestoreAuthRepository extends IAuthRepository {
 
   async signup(email, password, userData = {}) {
     try {
-      console.log("[FirestoreAuthRepository] signup - Attempting to create user:", email);
+      console.log(
+        "[FirestoreAuthRepository] signup - Attempting to create user:",
+        email
+      );
       console.log("[FirestoreAuthRepository] signup - Auth object:", auth);
-      console.log("[FirestoreAuthRepository] signup - Auth app:", auth?.app?.name);
-      
+      console.log(
+        "[FirestoreAuthRepository] signup - Auth app:",
+        auth?.app?.name
+      );
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -64,7 +70,11 @@ export class FirestoreAuthRepository extends IAuthRepository {
       );
       const firebaseUser = userCredential.user;
 
-      console.log("[FirestoreAuthRepository] signup - Firebase user created:", firebaseUser.uid, firebaseUser.email);
+      console.log(
+        "[FirestoreAuthRepository] signup - Firebase user created:",
+        firebaseUser.uid,
+        firebaseUser.email
+      );
 
       const user = {
         uid: firebaseUser.uid,
@@ -74,14 +84,23 @@ export class FirestoreAuthRepository extends IAuthRepository {
       };
 
       this.currentUser = user;
-      console.log("[FirestoreAuthRepository] signup - User created successfully:", user.uid);
+      console.log(
+        "[FirestoreAuthRepository] signup - User created successfully:",
+        user.uid
+      );
       return user;
     } catch (error) {
       console.error("[FirestoreAuthRepository] signup error:", error);
       console.error("[FirestoreAuthRepository] signup error code:", error.code);
-      console.error("[FirestoreAuthRepository] signup error message:", error.message);
-      console.error("[FirestoreAuthRepository] signup error stack:", error.stack);
-      
+      console.error(
+        "[FirestoreAuthRepository] signup error message:",
+        error.message
+      );
+      console.error(
+        "[FirestoreAuthRepository] signup error stack:",
+        error.stack
+      );
+
       if (error.code === "auth/email-already-in-use") {
         throw new Error("Email já está em uso");
       }
@@ -92,10 +111,16 @@ export class FirestoreAuthRepository extends IAuthRepository {
         throw new Error("Email inválido");
       }
       if (error.code === "auth/operation-not-allowed") {
-        throw new Error("Operação não permitida. Verifique se Email/Senha está habilitado no Firebase Console");
+        throw new Error(
+          "Operação não permitida. Verifique se Email/Senha está habilitado no Firebase Console"
+        );
       }
       // Mostrar erro mais detalhado para debug
-      throw new Error(`Erro ao criar conta: ${error.message} (Código: ${error.code || 'desconhecido'})`);
+      throw new Error(
+        `Erro ao criar conta: ${error.message} (Código: ${
+          error.code || "desconhecido"
+        })`
+      );
     }
   }
 
@@ -153,7 +178,10 @@ export class FirestoreAuthRepository extends IAuthRepository {
         email: user.email,
       };
       this.currentUser = userObj;
-      console.log("[FirestoreAuthRepository] getCurrentUser - Found user:", user.uid);
+      console.log(
+        "[FirestoreAuthRepository] getCurrentUser - Found user:",
+        user.uid
+      );
       return userObj;
     }
     this.currentUser = null;
@@ -196,7 +224,9 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
       // Garantir que o uid está presente
       const uid = transaction.uid || auth.currentUser?.uid;
       if (!uid) {
-        throw new Error("uid is required - user must be authenticated or transaction must have uid");
+        throw new Error(
+          "uid is required - user must be authenticated or transaction must have uid"
+        );
       }
 
       const data = {
@@ -217,7 +247,14 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
       const docRef = await addDoc(collection(db, "transactions"), data);
       const docSnap = await getDoc(docRef);
       const result = { id: docRef.id, ...docSnap.data() };
-      console.log("[FirestoreTransactionRepository] create - Transaction created:", result.id, "uid:", result.uid, "monthKey:", result.monthKey);
+      console.log(
+        "[FirestoreTransactionRepository] create - Transaction created:",
+        result.id,
+        "uid:",
+        result.uid,
+        "monthKey:",
+        result.monthKey
+      );
       return result;
     } catch (error) {
       console.error("[FirestoreTransactionRepository] create error:", error);
@@ -230,7 +267,9 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
       // Garantir que o uid está presente (não atualizar uid, apenas verificar)
       const uid = updates.uid || auth.currentUser?.uid;
       if (!uid) {
-        throw new Error("uid is required - user must be authenticated or updates must have uid");
+        throw new Error(
+          "uid is required - user must be authenticated or updates must have uid"
+        );
       }
 
       const docRef = doc(db, "transactions", id);
@@ -314,9 +353,19 @@ export class FirestoreTransactionRepository extends ITransactionRepository {
         ...doc.data(),
         date: doc.data().date?.toDate?.()?.toISOString() || doc.data().date,
       }));
-      console.log("[FirestoreTransactionRepository] getByMonth - Found", results.length, "transactions for uid:", uid, "monthKey:", monthKey);
+      console.log(
+        "[FirestoreTransactionRepository] getByMonth - Found",
+        results.length,
+        "transactions for uid:",
+        uid,
+        "monthKey:",
+        monthKey
+      );
       if (results.length > 0) {
-        console.log("[FirestoreTransactionRepository] getByMonth - First transaction uid:", results[0].uid);
+        console.log(
+          "[FirestoreTransactionRepository] getByMonth - First transaction uid:",
+          results[0].uid
+        );
       }
       return results;
     } catch (error) {

@@ -8,6 +8,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeAuth = async () => {
       try {
         console.log('[AuthProvider] Starting initialization...');
@@ -16,7 +18,10 @@ export function AuthProvider({ children }) {
         await authService.init();
         
         // Aguardar um pouco para garantir que o listener foi configurado e usuário foi restaurado
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Firebase Auth pode demorar um pouco para restaurar a sessão
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (!isMounted) return;
         
         // Buscar usuário atual (deve estar restaurado pelo init)
         let currentUser = authService.getCurrentUser();
@@ -26,6 +31,8 @@ export function AuthProvider({ children }) {
           currentUser = await currentUser;
         }
         
+        if (!isMounted) return;
+        
         console.log('[AuthProvider] Initialized, current user from authService:', currentUser?.uid || 'null');
         
         // Se ainda não tem usuário, tentar buscar direto do localStorage como fallback
@@ -34,7 +41,7 @@ export function AuthProvider({ children }) {
           if (typeof Storage !== 'undefined') {
             try {
               const stored = localStorage.getItem('financeiro_current_user');
-              if (stored) {
+              if (stored && stored !== 'null' && stored !== 'undefined') {
                 currentUser = JSON.parse(stored);
                 console.log('[AuthProvider] Found user in localStorage fallback:', currentUser?.uid || 'null');
                 // Atualizar no authService também
@@ -48,6 +55,8 @@ export function AuthProvider({ children }) {
           }
         }
         
+        if (!isMounted) return;
+        
         if (currentUser && currentUser.uid) {
           setUser(currentUser);
           console.log('[AuthProvider] User set in state:', currentUser.uid);
@@ -57,14 +66,23 @@ export function AuthProvider({ children }) {
         }
       } catch (error) {
         console.error('[AuthProvider] Error initializing auth:', error);
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
-        console.log('[AuthProvider] Initialization complete, loading set to false');
+        if (isMounted) {
+          setLoading(false);
+          console.log('[AuthProvider] Initialization complete, loading set to false');
+        }
       }
     };
 
     initializeAuth();
+    
+    // Cleanup
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleLogin = (userData) => {
