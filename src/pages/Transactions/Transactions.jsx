@@ -36,11 +36,9 @@ export function Transactions({ user }) {
     accountId: "",
     categoryId: "",
     date: (() => {
-      // Usar primeiro dia do mês selecionado ou mês atual
+      // Sempre usar a data atual (dia de hoje)
       const today = new Date();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const year = today.getFullYear();
-      return `${year}-${month}-01`;
+      return today.toISOString().split("T")[0];
     })(),
   });
 
@@ -71,12 +69,6 @@ export function Transactions({ user }) {
   useEffect(() => {
     if (user?.uid) {
       loadData();
-      // Atualizar data do formulário para o primeiro dia do mês selecionado
-      if (selectedMonth) {
-        const [year, month] = selectedMonth.split("-");
-        const formDate = `${year}-${month}-01`;
-        setFormData(prev => ({ ...prev, date: formDate }));
-      }
     } else {
       // Limpar dados se não houver usuário
       setTransactions([]);
@@ -85,6 +77,20 @@ export function Transactions({ user }) {
       setLoading(false);
     }
   }, [selectedMonth, user?.uid]);
+
+  // Quando os bancos forem carregados, pré-selecionar o primeiro se não houver seleção
+  useEffect(() => {
+    if (banks.length > 0 && !editingId && !showForm) {
+      // Só pré-selecionar quando não estiver editando e o formulário não estiver aberto
+      // Isso evita sobrescrever quando o usuário está editando
+      setFormData(prev => {
+        if (!prev.accountId) {
+          return { ...prev, accountId: banks[0].id };
+        }
+        return prev;
+      });
+    }
+  }, [banks, editingId, showForm]);
 
   const loadData = async () => {
     setLoading(true);
@@ -141,19 +147,18 @@ export function Transactions({ user }) {
   };
 
   const resetForm = () => {
-    // Se tiver um mês selecionado, usar o primeiro dia desse mês
-    // Senão usar a data atual
-    let formDate = new Date().toISOString().split("T")[0];
-    if (selectedMonth) {
-      const [year, month] = selectedMonth.split("-");
-      formDate = `${year}-${month}-01`; // Primeiro dia do mês selecionado
-    }
+    // Sempre usar a data atual (dia de hoje)
+    const today = new Date();
+    const formDate = today.toISOString().split("T")[0];
+    
+    // Pré-selecionar o primeiro banco se existir
+    const defaultAccountId = banks.length > 0 ? banks[0].id : "";
 
     setFormData({
       description: "",
       amount: "",
       type: "expense",
-      accountId: "",
+      accountId: defaultAccountId,
       categoryId: "",
       date: formDate,
     });
