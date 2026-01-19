@@ -217,11 +217,26 @@ export function MonthlyBills({ user }) {
     
     try {
       // Fazer a chamada à API em background
-      console.log('[MonthlyBills] executeToggleStatus - Calling toggleStatus with accountId:', accountId);
+      console.log('[MonthlyBills] executeToggleStatus - Calling toggleStatus:', {
+        statusId,
+        monthKey,
+        uid: user.uid,
+        accountId: accountId,
+        hasAccountId: !!accountId
+      });
+      
+      if (!accountId && newStatus === 'paid') {
+        console.warn('[MonthlyBills] executeToggleStatus - WARNING: Marking as paid without accountId!');
+      }
+      
       await payableService.toggleStatus(statusId, monthKey, user.uid, accountId);
       console.log('[MonthlyBills] executeToggleStatus - Status toggled successfully');
-      // Não precisa recarregar tudo, apenas atualizar o item se necessário
-      // O dashboard será recalculado automaticamente pela criação/deleção da transação
+      
+      // Recarregar dados para garantir que tudo está atualizado
+      // Isso garante que os gráficos sejam atualizados
+      setTimeout(() => {
+        loadData();
+      }, 500);
     } catch (error) {
       console.error("Error toggling status:", error);
       // Reverter para o estado anterior em caso de erro
