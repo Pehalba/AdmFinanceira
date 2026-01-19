@@ -24,6 +24,12 @@ class AuthService {
     
     console.log('[AuthService] init - Starting initialization...');
     
+    // Criar uma Promise que será resolvida quando o primeiro callback do onAuthStateChanged for chamado
+    let resolveInitialAuth;
+    const initialAuthPromise = new Promise((resolve) => {
+      resolveInitialAuth = resolve;
+    });
+    
     // Configurar listener PRIMEIRO para capturar mudanças do Firebase Auth
     // O Firebase Auth persiste a sessão automaticamente e o listener será chamado
     this.unsubscribe = await authRepository.onAuthStateChanged((user) => {
@@ -55,54 +61,31 @@ class AuthService {
           }
         }
       }
+      
+      // Resolver a Promise na primeira chamada (inicialização)
+      if (resolveInitialAuth) {
+        resolveInitialAuth();
+        resolveInitialAuth = null; // Evitar resolver múltiplas vezes
+      }
     });
     
-    // Aguardar um pouco para o Firebase Auth inicializar e o listener ser chamado
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Depois, tentar restaurar o usuário atual do repositório (Firebase Auth)
-    let storedUser = null;
+    // Aguardar o primeiro callback do Firebase Auth (pode demorar até 2 segundos)
+    // Isso garante que a sessão persistida foi restaurada antes de continuar
     try {
-      storedUser = authRepository.getCurrentUser();
-      // Se getCurrentUser retornou uma Promise, aguardar
-      if (storedUser && typeof storedUser.then === 'function') {
-        storedUser = await storedUser;
-      }
-      
-      if (storedUser && storedUser.uid) {
-        this.currentUser = storedUser;
-        console.log('[AuthService] init - Restored user from repository:', storedUser.uid, 'email:', storedUser.email);
-      } else {
-        console.log('[AuthService] init - No valid user found in repository');
-      }
+      await Promise.race([
+        initialAuthPromise,
+        new Promise((resolve) => setTimeout(resolve, 2000)) // Timeout de 2 segundos
+      ]);
+      console.log('[AuthService] init - Firebase Auth state restored');
     } catch (error) {
-      console.error('[AuthService] init - Error restoring user:', error);
+      console.error('[AuthService] init - Error waiting for auth state:', error);
     }
     
-    // Se ainda não tem usuário, tentar do localStorage como fallback (apenas para compatibilidade)
-    if (!this.currentUser || !this.currentUser.uid) {
-      if (typeof Storage !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('financeiro_current_user');
-          if (stored && stored !== 'null' && stored !== 'undefined') {
-            const parsedUser = JSON.parse(stored);
-            if (parsedUser && parsedUser.uid) {
-              // Verificar se o usuário ainda está autenticado no Firebase
-              const firebaseUser = authRepository.getCurrentUser();
-              if (firebaseUser && firebaseUser.uid === parsedUser.uid) {
-                this.currentUser = parsedUser;
-                console.log('[AuthService] init - Restored user from localStorage fallback:', parsedUser.uid);
-              } else {
-                // Se não está mais autenticado no Firebase, limpar localStorage
-                localStorage.removeItem('financeiro_current_user');
-                console.log('[AuthService] init - User in localStorage but not authenticated in Firebase, cleared');
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[AuthService] init - Error reading from localStorage fallback:', error);
-        }
-      }
+    // Verificar se o usuário foi restaurado
+    if (this.currentUser && this.currentUser.uid) {
+      console.log('[AuthService] init - User restored from Firebase Auth:', this.currentUser.uid, 'email:', this.currentUser.email);
+    } else {
+      console.log('[AuthService] init - No user found after Firebase Auth initialization');
     }
     
     console.log('[AuthService] init - Initialization complete, current user:', this.currentUser?.uid || 'null');

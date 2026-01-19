@@ -15,11 +15,8 @@ export function AuthProvider({ children }) {
         console.log('[AuthProvider] Starting initialization...');
         
         // Inicializar o authService primeiro
+        // O init() agora aguarda o primeiro callback do Firebase Auth
         await authService.init();
-        
-        // Aguardar um pouco para garantir que o listener foi configurado e usuário foi restaurado
-        // Firebase Auth pode demorar um pouco para restaurar a sessão
-        await new Promise(resolve => setTimeout(resolve, 500));
         
         if (!isMounted) return;
         
@@ -34,28 +31,6 @@ export function AuthProvider({ children }) {
         if (!isMounted) return;
         
         console.log('[AuthProvider] Initialized, current user from authService:', currentUser?.uid || 'null');
-        
-        // Se ainda não tem usuário, tentar buscar direto do localStorage como fallback
-        if (!currentUser || !currentUser.uid) {
-          console.log('[AuthProvider] No user from authService, trying localStorage fallback...');
-          if (typeof Storage !== 'undefined') {
-            try {
-              const stored = localStorage.getItem('financeiro_current_user');
-              if (stored && stored !== 'null' && stored !== 'undefined') {
-                currentUser = JSON.parse(stored);
-                console.log('[AuthProvider] Found user in localStorage fallback:', currentUser?.uid || 'null');
-                // Atualizar no authService também
-                if (currentUser && currentUser.uid) {
-                  authService.currentUser = currentUser;
-                }
-              }
-            } catch (error) {
-              console.error('[AuthProvider] Error reading from localStorage fallback:', error);
-            }
-          }
-        }
-        
-        if (!isMounted) return;
         
         if (currentUser && currentUser.uid) {
           setUser(currentUser);
@@ -84,6 +59,35 @@ export function AuthProvider({ children }) {
       isMounted = false;
     };
   }, []);
+  
+  // Escutar mudanças no authService em um useEffect separado
+  // Isso garante que se o Firebase Auth detectar uma mudança depois da inicialização,
+  // o estado do React será atualizado
+  useEffect(() => {
+    let isMounted = true;
+    let lastUserId = user?.uid || null;
+    
+    const checkUserInterval = setInterval(() => {
+      if (!isMounted) {
+        clearInterval(checkUserInterval);
+        return;
+      }
+      
+      const currentUser = authService.getCurrentUser();
+      const currentUserId = currentUser?.uid || null;
+      
+      if (currentUserId !== lastUserId) {
+        console.log('[AuthProvider] User changed detected, updating state');
+        lastUserId = currentUserId;
+        setUser(currentUser);
+      }
+    }, 1000); // Verificar a cada segundo
+    
+    return () => {
+      isMounted = false;
+      clearInterval(checkUserInterval);
+    };
+  }, [user?.uid]);
 
   const handleLogin = (userData) => {
     setUser(userData);
