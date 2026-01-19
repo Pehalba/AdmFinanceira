@@ -47,19 +47,15 @@ export function DonutChart({ data = [], total = 0 }) {
   // Usar stroke-dasharray: [comprimento visível] [comprimento invisível]
   // stroke-dashoffset: onde começar o traço (0 = início padrão)
   
-  let accumulatedPercent = 0;
+  let accumulatedOffset = 0;
   
   const slicesWithOffset = slices.map((slice) => {
     const sliceLength = (slice.percentage / 100) * circumference;
     
-    // Percentual acumulado antes desta fatia (onde esta fatia começa)
-    const startPercent = accumulatedPercent;
-    accumulatedPercent += slice.percentage;
-    
-    // Calcular offset: começar no topo (-90 graus) e somar o percentual acumulado
+    // Calcular offset: começar no topo (-90 graus = -25% da circunferência)
     // stroke-dashoffset: negativo move para frente (sentido horário)
-    // Começar no topo: -25% da circunferência, depois somar o acumulado
-    const startOffset = -(circumference * 0.25) - (startPercent / 100) * circumference;
+    const startOffset = -(circumference * 0.25) - accumulatedOffset;
+    accumulatedOffset += sliceLength;
     
     return {
       ...slice,

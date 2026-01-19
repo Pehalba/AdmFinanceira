@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../blocks/Card/Card';
 import { Fab } from '../../blocks/Fab/Fab';
 import { DonutChart } from '../../blocks/DonutChart/DonutChart';
+import { BarChart } from '../../blocks/BarChart/BarChart';
 import { dashboardService } from '../../scripts/services/dashboardService';
 import { payableService } from '../../scripts/services/payableService';
 import { formatCurrency, formatDate, getMonthKey } from '../../scripts/utils/dateUtils';
@@ -140,30 +141,46 @@ export function Dashboard({ user }) {
             <div className="dashboard__chart-bar-group">
               <div className="dashboard__chart-label">Receitas</div>
               <div className="dashboard__chart-bar-wrapper">
-                <div 
-                  className="dashboard__chart-bar dashboard__chart-bar--income"
-                  style={{ width: `${(totalIncome / maxValue) * 100}%` }}
-                >
-                  <span className="dashboard__chart-bar-value">
-                    {formatCurrency(totalIncome)}
-                  </span>
-                </div>
+                {totalIncome > 0 ? (
+                  <div 
+                    className="dashboard__chart-bar dashboard__chart-bar--income"
+                    style={{ width: `${(totalIncome / maxValue) * 100}%` }}
+                  >
+                    <span className="dashboard__chart-bar-value">
+                      {formatCurrency(totalIncome)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="dashboard__chart-bar-empty">
+                    {formatCurrency(0)}
+                  </div>
+                )}
               </div>
             </div>
             <div className="dashboard__chart-bar-group">
               <div className="dashboard__chart-label">Despesas</div>
               <div className="dashboard__chart-bar-wrapper">
-                <div 
-                  className="dashboard__chart-bar dashboard__chart-bar--expense"
-                  style={{ width: `${(totalExpense / maxValue) * 100}%` }}
-                >
-                  <span className="dashboard__chart-bar-value">
-                    {formatCurrency(totalExpense)}
-                  </span>
-                </div>
+                {totalExpense > 0 ? (
+                  <div 
+                    className="dashboard__chart-bar dashboard__chart-bar--expense"
+                    style={{ width: `${(totalExpense / maxValue) * 100}%` }}
+                  >
+                    <span className="dashboard__chart-bar-value">
+                      {formatCurrency(totalExpense)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="dashboard__chart-bar-empty">
+                    {formatCurrency(0)}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        </Card>
+
+        <Card title="Comparação Receitas vs Despesas" className="dashboard__chart-card">
+          <BarChart income={totalIncome} expense={totalExpense} />
         </Card>
       </div>
 

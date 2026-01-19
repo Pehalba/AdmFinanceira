@@ -1,0 +1,140 @@
+.bar-chart {
+  padding: 1.5rem 0;
+}
+
+.bar-chart__container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.bar-chart__bars {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 3rem;
+  height: 200px;
+  padding: 0 1rem;
+}
+
+.bar-chart__bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 150px;
+}
+
+.bar-chart__bar-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+}
+
+.bar-chart__bar-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: linear-gradient(to top, #f3f4f6 0%, transparent 100%);
+  border-radius: 0.5rem 0.5rem 0 0;
+  min-height: 20px;
+}
+
+.bar-chart__bar {
+  width: 100%;
+  min-height: 20px;
+  border-radius: 0.5rem 0.5rem 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.5rem 0.25rem;
+  transition: height 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bar-chart__bar--income {
+  background: linear-gradient(to top, #10b981, #34d399);
+  color: white;
+}
+
+.bar-chart__bar--expense {
+  background: linear-gradient(to top, #ef4444, #f87171);
+  color: white;
+}
+
+.bar-chart__bar-value {
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  text-align: center;
+}
+
+/* Se a barra for muito pequena, mostrar valor embaixo da barra */
+.bar-chart__bar--small .bar-chart__bar-value {
+  position: static;
+  transform: none;
+  color: #374151;
+  text-shadow: none;
+  font-size: 0.75rem;
+  padding-top: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.bar-chart__bar-empty {
+  width: 100%;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.25rem;
+}
+
+.bar-chart__comparison {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.bar-chart__comparison-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.bar-chart__comparison-text--positive {
+  color: #059669;
+}
+
+.bar-chart__comparison-text--negative {
+  color: #dc2626;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .bar-chart__bars {
+    gap: 2rem;
+    height: 180px;
+  }
+
+  .bar-chart__bar-group {
+    max-width: 120px;
+  }
+
+  .bar-chart__bar-value {
+    font-size: 0.75rem;
+  }
+}
