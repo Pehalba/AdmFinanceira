@@ -12,9 +12,22 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Suporte para safe-area no iPhone */
-  padding-top: env(safe-area-inset-top);
+  margin: 0;
+  padding: 0;
   background-color: #111827;
+}
+
+/* Preencher área do notch do iPhone */
+html::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background-color: #111827;
+  z-index: 9999;
+  pointer-events: none;
 }
 
 body {
