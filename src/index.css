@@ -41,6 +41,8 @@ body {
   min-height: calc(100vh - env(safe-area-inset-top));
   overflow-x: hidden; /* Evitar scroll horizontal */
   position: relative; /* Garantir contexto para elementos fixed */
+  /* Preencher área da barra de status do iOS */
+  background: linear-gradient(to bottom, #111827 0%, #111827 env(safe-area-inset-top), #f9fafb env(safe-area-inset-top), #f9fafb 100%);
 }
 
 #root {
