@@ -424,6 +424,13 @@ class PayableService {
 
     if (status.status === 'paid') {
       // Quando desmarca, precisa passar monthKey e uid
+      if (!uid) {
+        throw new Error('UID is required for markAsOpen');
+      }
+      if (!monthKey) {
+        throw new Error('monthKey is required for markAsOpen');
+      }
+      console.log('[PayableService] toggleStatus - Calling markAsOpen with:', { statusId, monthKey, uid });
       return await this.markAsOpen(statusId, monthKey, uid);
     } else {
       return await this.markAsPaid(statusId, monthKey, uid, accountId);
