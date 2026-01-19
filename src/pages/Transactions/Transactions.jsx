@@ -122,7 +122,13 @@ export function Transactions({ user }) {
         categoryService.getAll(user?.uid),
       ]);
       setTransactions(trans);
-      setBanks(banksList);
+      const banksWithPrimary = banksList || [];
+      console.log('[Transactions] loadData - Banks loaded:', {
+        count: banksWithPrimary.length,
+        banks: banksWithPrimary.map(b => ({ id: b.id, name: b.name, isPrimary: b.isPrimary })),
+        primaryBank: banksWithPrimary.find(b => b.isPrimary)
+      });
+      setBanks(banksWithPrimary);
       setCategories(cats);
     } catch (error) {
       console.error("Error loading data:", error);
