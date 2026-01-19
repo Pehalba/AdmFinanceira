@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '../../blocks/Card/Card';
 import { Fab } from '../../blocks/Fab/Fab';
 import { DonutChart } from '../../blocks/DonutChart/DonutChart';
@@ -12,6 +12,7 @@ import './Dashboard.css';
 
 export function Dashboard({ user }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(getMonthKey(new Date()));
@@ -24,6 +25,14 @@ export function Dashboard({ user }) {
       setLoading(false);
     }
   }, [selectedMonth, user?.uid]);
+
+  // Recarregar dashboard quando voltar de outra página (ex: transactions)
+  useEffect(() => {
+    if (user?.uid && location.pathname === '/') {
+      console.log('[Dashboard] Route changed to /, reloading dashboard');
+      loadDashboard();
+    }
+  }, [location.pathname, user?.uid]);
 
   // Recarregar dashboard quando a página ganhar foco (usuário volta da página de transações)
   useEffect(() => {
@@ -56,12 +65,14 @@ export function Dashboard({ user }) {
       const [dashboardData, upcomingPayables, accounts] = await Promise.all([
         dashboardService.getDashboardData(selectedMonth),
         payableService.getUpcoming(15, 10, user?.uid),
-        accountService.getAll(user?.uid),
+        accountService.getAll(user?.uid, true), // forceReload = true para garantir dados atualizados
       ]);
       console.log('[Dashboard] loadDashboard - Data loaded:', {
         totalIncome: dashboardData.monthlySummary?.totalIncome,
         totalExpense: dashboardData.monthlySummary?.totalExpense,
-        balance: dashboardData.monthlySummary?.balance
+        balance: dashboardData.monthlySummary?.balance,
+        accountsCount: accounts.length,
+        accounts: accounts.map(a => ({ id: a.id, name: a.name, balance: a.balance }))
       });
       setData({ ...dashboardData, upcomingPayables, accounts });
     } catch (error) {
@@ -187,8 +198,8 @@ export function Dashboard({ user }) {
           {recentTransactions.length === 0 ? (
             <p className="dashboard__empty">Nenhuma transação recente</p>
           ) : (
-            <ul className="dashboard__list">
-              {recentTransactions.map((transaction) => (
+            <ul className="dashboard__list dashboard__list--scrollable">
+              {recentTransactions.slice(0, 10).map((transaction) => (
                 <li key={transaction.id} className="dashboard__list-item">
                   <div>
                     <strong>{transaction.description || 'Sem descrição'}</strong>

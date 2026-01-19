@@ -193,6 +193,32 @@
   margin: 0;
 }
 
+/* Limitar altura da lista de transações recentes com scroll */
+.dashboard__list--scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Estilizar scrollbar */
+.dashboard__list--scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard__list--scrollable::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.dashboard__list--scrollable::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dashboard__list--scrollable::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .dashboard__list-item {
   padding: 1rem 0;
   border-bottom: 1px solid #e5e7eb;

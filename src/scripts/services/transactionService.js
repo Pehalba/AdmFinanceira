@@ -1,6 +1,7 @@
 import { transactionRepository, accountRepository, categoryRepository } from '../repositories/index.js';
 import { getMonthKey } from '../utils/dateUtils.js';
 import { dashboardService } from './dashboardService.js';
+import { accountService } from './accountService.js';
 
 /**
  * Serviço de transações
@@ -104,6 +105,11 @@ class TransactionService {
         }).catch(err => {
           console.error('[TransactionService] create - Error updating account balance:', err);
         });
+        
+        // Invalidar cache de accounts para forçar recarregamento
+        await accountService.invalidateCache(accountUid).catch(err => {
+          console.error('[TransactionService] create - Error invalidating account cache:', err);
+        });
       } else {
         console.warn('[TransactionService] create - No uid found for account update:', {
           accountUid: account.uid,
@@ -199,6 +205,11 @@ class TransactionService {
             }).catch(err => {
               console.error('[TransactionService] update - Error reverting old account balance:', err);
             });
+            
+            // Invalidar cache de accounts para forçar recarregamento
+            await accountService.invalidateCache(oldAccountUid).catch(err => {
+              console.error('[TransactionService] update - Error invalidating old account cache:', err);
+            });
           }
         }
       }
@@ -232,6 +243,11 @@ class TransactionService {
               uid: newAccountUid,
             }).catch(err => {
               console.error('[TransactionService] update - Error updating new account balance:', err);
+            });
+            
+            // Invalidar cache de accounts para forçar recarregamento
+            await accountService.invalidateCache(newAccountUid).catch(err => {
+              console.error('[TransactionService] update - Error invalidating account cache:', err);
             });
           }
         }
@@ -297,6 +313,11 @@ class TransactionService {
             uid: accountUid,
           }).catch(err => {
             console.error('[TransactionService] delete - Error reverting account balance:', err);
+          });
+          
+          // Invalidar cache de accounts para forçar recarregamento
+          await accountService.invalidateCache(accountUid).catch(err => {
+            console.error('[TransactionService] delete - Error invalidating account cache:', err);
           });
         }
       }
