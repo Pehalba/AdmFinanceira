@@ -191,8 +191,18 @@ export function MonthlyBills({ user }) {
     }
   };
 
-  const executeToggleStatus = async (statusId, monthKey, accountId) => {
-    if (!user?.uid) return;
+  const executeToggleStatus = async (statusId, monthKey, accountId, uid = null) => {
+    if (!user?.uid && !uid) {
+      console.error('[MonthlyBills] executeToggleStatus - No uid available!');
+      return;
+    }
+    
+    // Usar uid do parâmetro ou do user
+    const finalUid = uid || user?.uid;
+    if (!finalUid) {
+      console.error('[MonthlyBills] executeToggleStatus - Cannot proceed without uid');
+      return;
+    }
     
     // Salvar estado anterior para rollback se necessário
     const previousPayables = [...payables];
@@ -220,16 +230,21 @@ export function MonthlyBills({ user }) {
       console.log('[MonthlyBills] executeToggleStatus - Calling toggleStatus:', {
         statusId,
         monthKey,
-        uid: user.uid,
+        uid: finalUid,
         accountId: accountId,
-        hasAccountId: !!accountId
+        hasAccountId: !!accountId,
+        hasUid: !!finalUid
       });
       
       if (!accountId && newStatus === 'paid') {
         console.warn('[MonthlyBills] executeToggleStatus - WARNING: Marking as paid without accountId!');
       }
       
-      await payableService.toggleStatus(statusId, monthKey, user.uid, accountId);
+      if (!finalUid) {
+        throw new Error('UID is required but not available');
+      }
+      
+      await payableService.toggleStatus(statusId, monthKey, finalUid, accountId);
       console.log('[MonthlyBills] executeToggleStatus - Status toggled successfully');
       
       // Recarregar dados para garantir que tudo está atualizado
