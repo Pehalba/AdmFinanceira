@@ -61,9 +61,13 @@ export function DonutChart({ data = [], total = 0 }) {
     const sliceOffset = startOffset - accumulatedLength;
     accumulatedLength += sliceLength;
     
+    // O gap invisível deve ser o restante da circunferência
+    // Isso garante que as fatias se conectem perfeitamente
+    const gapLength = circumference - sliceLength;
+    
     return {
       ...slice,
-      dashArray: `${sliceLength} ${circumference}`,
+      dashArray: `${sliceLength} ${gapLength}`,
       dashOffset: sliceOffset,
     };
   });

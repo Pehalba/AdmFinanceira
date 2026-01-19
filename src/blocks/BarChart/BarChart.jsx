@@ -36,7 +36,7 @@ export function BarChart({ income = 0, expense = 0 }) {
               {income > 0 ? (
                 <div 
                   className={`bar-chart__bar bar-chart__bar--income ${incomePercentage < 15 ? 'bar-chart__bar--small' : ''}`}
-                  style={{ height: `${incomePercentage}%` }}
+                  style={{ height: `${(incomePercentage / 100) * 200}px` }}
                 >
                   {incomePercentage >= 15 ? (
                     <span className="bar-chart__bar-value">
@@ -63,7 +63,7 @@ export function BarChart({ income = 0, expense = 0 }) {
               {expense > 0 ? (
                 <div 
                   className={`bar-chart__bar bar-chart__bar--expense ${expensePercentage < 15 ? 'bar-chart__bar--small' : ''}`}
-                  style={{ height: `${expensePercentage}%` }}
+                  style={{ height: `${(expensePercentage / 100) * 200}px` }}
                 >
                   {expensePercentage >= 15 ? (
                     <span className="bar-chart__bar-value">
