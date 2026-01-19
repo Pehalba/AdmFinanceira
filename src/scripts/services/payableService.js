@@ -333,12 +333,18 @@ class PayableService {
     });
 
     // Atualizar status
-    return await monthlyExpenseStatusRepository.update(statusId, {
-      uid, // Necessário para o update
+    const updateData = {
+      uid: uid, // Necessário para o update
       status: 'paid',
       paidAtISO: new Date().toISOString(),
       linkedTransactionId: transaction.id,
+    };
+    console.log('[PayableService] markAsPaid - Updating status with:', {
+      statusId,
+      uid: uid,
+      hasUid: !!uid
     });
+    return await monthlyExpenseStatusRepository.update(statusId, updateData);
   }
 
   /**
