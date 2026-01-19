@@ -206,8 +206,13 @@ class PayableService {
     
     // Garantir status para o mês atual e próximo
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Zerar horas para comparação de data
     const currentMonthKey = getMonthKey(today);
     const nextMonthKey = getMonthKey(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+    
+    // Calcular data limite (hoje + dias)
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + days);
     
     // Garantir status para todos os templates
     const statusPromises = templates.map(template => 
@@ -219,28 +224,50 @@ class PayableService {
     await Promise.all(statusPromises.flat());
     
     // Buscar statuses próximos
-    const statuses = await monthlyExpenseStatusRepository.getUpcoming(days, limit);
+    const statuses = await monthlyExpenseStatusRepository.getUpcoming(days, limit * 2);
     
-    // Combinar status com templates
-    return statuses.map(status => {
+    // Combinar status com templates e filtrar por data
+    const result = statuses.map(status => {
       const template = templates.find(t => t.id === status.templateId);
       if (!template) return null;
       
       const [year, month] = status.monthKey.split('-').map(Number);
       const day = template.dueDay || 10;
       const dueDate = new Date(year, month - 1, day);
+      dueDate.setHours(0, 0, 0, 0);
+      
+      // Filtrar apenas despesas abertas com data futura (a partir de hoje)
+      if (status.status !== 'open' || dueDate < today) {
+        return null;
+      }
+      
+      // Filtrar apenas despesas dentro do período (até hoje + dias)
+      if (dueDate > futureDate) {
+        return null;
+      }
       
       return {
         id: status.id,
         templateId: template.id,
         title: template.title,
-        amount: template.amount,
+        amount: (status.amountOverride !== undefined && status.amountOverride !== null) 
+          ? status.amountOverride 
+          : (template.amount || 0),
         dueDate: dueDate.toISOString(),
         categoryName: template.categoryName,
         status: status.status,
         monthKey: status.monthKey,
       };
     }).filter(Boolean);
+    
+    // Ordenar por data de vencimento e limitar
+    result.sort((a, b) => {
+      const dateA = new Date(a.dueDate);
+      const dateB = new Date(b.dueDate);
+      return dateA - dateB;
+    });
+    
+    return result.slice(0, limit);
   }
 
   /**

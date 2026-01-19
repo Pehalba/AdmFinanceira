@@ -6,6 +6,7 @@ import { DonutChart } from '../../blocks/DonutChart/DonutChart';
 import { BarChart } from '../../blocks/BarChart/BarChart';
 import { dashboardService } from '../../scripts/services/dashboardService';
 import { payableService } from '../../scripts/services/payableService';
+import { accountService } from '../../scripts/services/accountService';
 import { formatCurrency, formatDate, getMonthKey } from '../../scripts/utils/dateUtils';
 import './Dashboard.css';
 
@@ -52,16 +53,17 @@ export function Dashboard({ user }) {
     console.log('[Dashboard] loadDashboard - Loading for month:', selectedMonth, 'uid:', user.uid);
     setLoading(true);
     try {
-      const [dashboardData, upcomingPayables] = await Promise.all([
+      const [dashboardData, upcomingPayables, accounts] = await Promise.all([
         dashboardService.getDashboardData(selectedMonth),
         payableService.getUpcoming(15, 10, user?.uid),
+        accountService.getAll(user?.uid),
       ]);
       console.log('[Dashboard] loadDashboard - Data loaded:', {
         totalIncome: dashboardData.monthlySummary?.totalIncome,
         totalExpense: dashboardData.monthlySummary?.totalExpense,
         balance: dashboardData.monthlySummary?.balance
       });
-      setData({ ...dashboardData, upcomingPayables });
+      setData({ ...dashboardData, upcomingPayables, accounts });
     } catch (error) {
       console.error('[Dashboard] loadDashboard - Error loading dashboard:', error);
     } finally {
@@ -73,6 +75,7 @@ export function Dashboard({ user }) {
   const recurringBills = data?.recurringBills || [];
   const recentTransactions = data?.recentTransactions || [];
   const upcomingPayables = data?.upcomingPayables || [];
+  const accounts = data?.accounts || [];
   
   // Valores para gráficos (convertendo para números)
   const totalIncome = summary.totalIncome || 0;
@@ -161,17 +164,17 @@ export function Dashboard({ user }) {
           )}
         </Card>
 
-        <Card title="Contas Recorrentes">
-          {recurringBills.length === 0 ? (
-            <p className="dashboard__empty">Nenhuma conta recorrente ativa</p>
+        <Card title="Bancos">
+          {accounts.length === 0 ? (
+            <p className="dashboard__empty">Nenhum banco cadastrado</p>
           ) : (
             <ul className="dashboard__list">
-              {recurringBills.map((bill) => (
-                <li key={bill.id} className="dashboard__list-item">
+              {accounts.map((account) => (
+                <li key={account.id} className="dashboard__list-item">
                   <div>
-                    <strong>{bill.name}</strong>
+                    <strong>{account.name || 'Sem nome'}</strong>
                     <div className="dashboard__list-meta">
-                      {formatCurrency(bill.amount)} - {bill.description || 'Sem descrição'}
+                      {formatCurrency(account.balance || 0)} • {account.type === 'checking' ? 'Conta Corrente' : account.type === 'savings' ? 'Poupança' : account.type || 'Outro'}
                     </div>
                   </div>
                 </li>
