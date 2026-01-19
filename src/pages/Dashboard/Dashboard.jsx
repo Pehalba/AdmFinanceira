@@ -136,49 +136,6 @@ export function Dashboard({ user }) {
           <DonutChart data={categoryData.slice(0, 8)} total={summary.totalExpense || 0} />
         </Card>
 
-        <Card title="Receitas vs Despesas" className="dashboard__chart-card">
-          <div className="dashboard__chart-container">
-            <div className="dashboard__chart-bar-group">
-              <div className="dashboard__chart-label">Receitas</div>
-              <div className="dashboard__chart-bar-wrapper">
-                {totalIncome > 0 ? (
-                  <div 
-                    className="dashboard__chart-bar dashboard__chart-bar--income"
-                    style={{ width: `${(totalIncome / maxValue) * 100}%` }}
-                  >
-                    <span className="dashboard__chart-bar-value">
-                      {formatCurrency(totalIncome)}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="dashboard__chart-bar-empty">
-                    {formatCurrency(0)}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="dashboard__chart-bar-group">
-              <div className="dashboard__chart-label">Despesas</div>
-              <div className="dashboard__chart-bar-wrapper">
-                {totalExpense > 0 ? (
-                  <div 
-                    className="dashboard__chart-bar dashboard__chart-bar--expense"
-                    style={{ width: `${(totalExpense / maxValue) * 100}%` }}
-                  >
-                    <span className="dashboard__chart-bar-value">
-                      {formatCurrency(totalExpense)}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="dashboard__chart-bar-empty">
-                    {formatCurrency(0)}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-
         <Card title="Comparação Receitas vs Despesas" className="dashboard__chart-card">
           <BarChart income={totalIncome} expense={totalExpense} />
         </Card>

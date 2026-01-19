@@ -47,20 +47,24 @@ export function DonutChart({ data = [], total = 0 }) {
   // Usar stroke-dasharray: [comprimento visível] [comprimento invisível]
   // stroke-dashoffset: onde começar o traço (0 = início padrão)
   
-  let accumulatedOffset = 0;
+  // Começar no topo: -90 graus = -25% da circunferência
+  // stroke-dashoffset negativo move no sentido horário
+  const startOffset = -(circumference * 0.25);
+  
+  let accumulatedLength = 0;
   
   const slicesWithOffset = slices.map((slice) => {
     const sliceLength = (slice.percentage / 100) * circumference;
     
-    // Calcular offset: começar no topo (-90 graus = -25% da circunferência)
-    // stroke-dashoffset: negativo move para frente (sentido horário)
-    const startOffset = -(circumference * 0.25) - accumulatedOffset;
-    accumulatedOffset += sliceLength;
+    // O offset é onde começar o traço
+    // Começamos no topo e vamos acumulando o comprimento de cada fatia
+    const sliceOffset = startOffset - accumulatedLength;
+    accumulatedLength += sliceLength;
     
     return {
       ...slice,
       dashArray: `${sliceLength} ${circumference}`,
-      dashOffset: startOffset,
+      dashOffset: sliceOffset,
     };
   });
 
