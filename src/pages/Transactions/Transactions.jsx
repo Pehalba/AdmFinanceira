@@ -59,12 +59,23 @@ export function Transactions({ user }) {
         newParams.delete("month");
       }
       setSearchParams(newParams.toString() ? newParams : {});
+      
+      // Pré-selecionar banco principal quando abrir formulário via URL
+      if (banks.length > 0) {
+        const primaryBank = banks.find(bank => bank.isPrimary);
+        const defaultBankId = primaryBank ? primaryBank.id : banks[0].id;
+        setFormData(prev => ({
+          ...prev,
+          accountId: defaultBankId,
+        }));
+      }
+      
       // Scroll para o topo para ver o formulário
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
     }
-  }, [monthFromUrl, openFormFromUrl]);
+  }, [monthFromUrl, openFormFromUrl, banks]);
 
   useEffect(() => {
     if (user?.uid) {
@@ -78,14 +89,18 @@ export function Transactions({ user }) {
     }
   }, [selectedMonth, user?.uid]);
 
-  // Quando os bancos forem carregados, pré-selecionar o primeiro se não houver seleção
+  // Quando os bancos forem carregados, pré-selecionar banco principal ou primeiro banco
   useEffect(() => {
     if (banks.length > 0 && !editingId && !showForm) {
       // Só pré-selecionar quando não estiver editando e o formulário não estiver aberto
       // Isso evita sobrescrever quando o usuário está editando
       setFormData(prev => {
         if (!prev.accountId) {
-          return { ...prev, accountId: banks[0].id };
+          // Buscar banco principal primeiro
+          const primaryBank = banks.find(bank => bank.isPrimary);
+          // Se não houver principal, usar o primeiro banco
+          const defaultBankId = primaryBank ? primaryBank.id : banks[0].id;
+          return { ...prev, accountId: defaultBankId };
         }
         return prev;
       });
