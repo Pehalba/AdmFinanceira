@@ -10,6 +10,7 @@ import "./Banks.css";
 export function Banks({ user }) {
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -73,6 +74,22 @@ export function Banks({ user }) {
     }
   };
 
+  const handleRecalculateBalances = async () => {
+    if (!confirm("Isso irá recalcular o saldo de todas as contas baseado nas transações existentes. Deseja continuar?")) return;
+    
+    setRecalculating(true);
+    try {
+      await accountService.recalculateAllBalances(user.uid);
+      alert("Saldos recalculados com sucesso!");
+      loadBanks();
+    } catch (error) {
+      console.error("Error recalculating balances:", error);
+      alert("Erro ao recalcular saldos");
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   if (loading) {
     return <div className="banks__loading">Carregando...</div>;
   }
@@ -81,9 +98,18 @@ export function Banks({ user }) {
     <div className="banks">
       <div className="banks__header">
         <h1 className="banks__title">Bancos</h1>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancelar" : "Novo Banco"}
-        </Button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Button 
+            onClick={handleRecalculateBalances} 
+            disabled={recalculating}
+            variant="secondary"
+          >
+            {recalculating ? "Recalculando..." : "Recalcular Saldos"}
+          </Button>
+          <Button onClick={() => setShowForm(!showForm)}>
+            {showForm ? "Cancelar" : "Novo Banco"}
+          </Button>
+        </div>
       </div>
 
       {showForm && (
