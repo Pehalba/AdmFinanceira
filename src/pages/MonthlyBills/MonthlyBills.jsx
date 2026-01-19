@@ -423,12 +423,17 @@ export function MonthlyBills({ user }) {
                         onClick={() => handleStartEditAmount(payable)}
                         title="Clique para editar o valor"
                       >
-                        {formatCurrency(payable.amount || 0)}
-                        {payable.amountOverride !== undefined && payable.amountOverride !== null && (
-                          <span className="monthly-bills__amount-override-indicator" title="Valor personalizado para este mês">
-                            *
-                          </span>
-                        )}
+                        <span className="monthly-bills__amount-value">
+                          {formatCurrency(payable.amount || 0)}
+                          {payable.amountOverride !== undefined && payable.amountOverride !== null && (
+                            <span className="monthly-bills__amount-override-indicator" title="Valor personalizado para este mês">
+                              *
+                            </span>
+                          )}
+                        </span>
+                        <span className="monthly-bills__amount-edit-icon" title="Editar valor">
+                          ✏️
+                        </span>
                       </div>
                     )}
                   </div>

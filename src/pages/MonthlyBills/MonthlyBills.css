@@ -156,11 +156,27 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .monthly-bills__item-amount--editable:hover {
   background-color: #fef2f2;
+}
+
+.monthly-bills__amount-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.monthly-bills__amount-edit-icon {
+  font-size: 1rem;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.monthly-bills__item-amount--editable:hover .monthly-bills__amount-edit-icon {
+  opacity: 1;
 }
 
 .monthly-bills__amount-override-indicator {

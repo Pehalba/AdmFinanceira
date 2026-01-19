@@ -291,6 +291,7 @@ class PayableService {
 
     // Atualizar status
     return await monthlyExpenseStatusRepository.update(statusId, {
+      uid, // Necessário para o update
       status: 'paid',
       paidAtISO: new Date().toISOString(),
       linkedTransactionId: transaction.id,
@@ -301,7 +302,7 @@ class PayableService {
    * Marca despesa como não paga (open)
    * Remove transação automática se existir
    */
-  async markAsOpen(statusId) {
+  async markAsOpen(statusId, uid) {
     const status = await monthlyExpenseStatusRepository.getById(statusId);
     if (!status) {
       throw new Error('Status not found');
@@ -327,6 +328,7 @@ class PayableService {
 
     // Atualizar status
     return await monthlyExpenseStatusRepository.update(statusId, {
+      uid, // Necessário para o update
       status: 'open',
       paidAtISO: null,
       linkedTransactionId: null,
@@ -343,7 +345,7 @@ class PayableService {
     }
 
     if (status.status === 'paid') {
-      return await this.markAsOpen(statusId);
+      return await this.markAsOpen(statusId, uid);
     } else {
       return await this.markAsPaid(statusId, monthKey, uid);
     }
