@@ -5,6 +5,7 @@ import {
   categoryRepository 
 } from '../repositories/index.js';
 import { transactionService } from './transactionService.js';
+import { dashboardService } from './dashboardService.js';
 import { getMonthKey } from '../utils/dateUtils.js';
 
 /**
@@ -301,7 +302,17 @@ class PayableService {
       : (template.amount || 0);
     
     // Criar transação automática com accountId (transactionService.create() já atualiza o saldo)
-    console.log('[PayableService] markAsPaid - Creating transaction with accountId:', accountId);
+    console.log('[PayableService] markAsPaid - Creating transaction:', {
+      accountId: accountId,
+      amount: amount,
+      monthKey: monthKey,
+      uid: uid
+    });
+    
+    if (!accountId) {
+      console.warn('[PayableService] markAsPaid - WARNING: No accountId provided! Balance will not be updated.');
+    }
+    
     const transaction = await transactionService.create({
       uid,
       type: 'expense',
@@ -315,7 +326,11 @@ class PayableService {
       autoCreated: true, // Marca como criada automaticamente
       linkedPayableStatusId: statusId, // Link para status
     });
-    console.log('[PayableService] markAsPaid - Transaction created:', transaction.id, 'with accountId:', transaction.accountId);
+    console.log('[PayableService] markAsPaid - Transaction created:', {
+      id: transaction.id,
+      accountId: transaction.accountId,
+      amount: transaction.amount
+    });
 
     // Atualizar status
     return await monthlyExpenseStatusRepository.update(statusId, {
@@ -330,7 +345,7 @@ class PayableService {
    * Marca despesa como não paga (open)
    * Remove transação automática se existir
    */
-  async markAsOpen(statusId, uid) {
+  async markAsOpen(statusId, monthKey, uid) {
     const status = await monthlyExpenseStatusRepository.getById(statusId);
     if (!status) {
       throw new Error('Status not found');
@@ -346,11 +361,26 @@ class PayableService {
         const transaction = await transactionRepository.getById(status.linkedTransactionId);
         // Só deletar se foi criada automaticamente
         if (transaction?.autoCreated) {
+          console.log('[PayableService] markAsOpen - Deleting linked transaction:', status.linkedTransactionId);
           // Usar transactionService para garantir recálculo do dashboard
           await transactionService.delete(status.linkedTransactionId);
+          console.log('[PayableService] markAsOpen - Transaction deleted, dashboard should be recalculated');
         }
       } catch (error) {
-        console.warn('Error deleting linked transaction:', error);
+        console.error('[PayableService] markAsOpen - Error deleting linked transaction:', error);
+        // Mesmo com erro, tentar recalcular o resumo mensal
+        if (monthKey) {
+          await dashboardService.calculateMonthlySummary(monthKey).catch(err => {
+            console.error('[PayableService] markAsOpen - Error recalculating monthly summary:', err);
+          });
+        }
+      }
+    } else {
+      // Se não tinha transação vinculada, recalcular mesmo assim para garantir
+      if (monthKey) {
+        await dashboardService.calculateMonthlySummary(monthKey).catch(err => {
+          console.error('[PayableService] markAsOpen - Error recalculating monthly summary:', err);
+        });
       }
     }
 
