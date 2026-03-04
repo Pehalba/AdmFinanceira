@@ -472,12 +472,15 @@ export function MonthlyBills({ user }) {
             <div className="monthly-bills__list-header">
               <span className="monthly-bills__list-header-check">✓</span>
               <span className="monthly-bills__list-header-name">Nome</span>
-              <span className="monthly-bills__list-header-value">Valor</span>
+              <span className="monthly-bills__list-header-due">Vencimento</span>
+              <span className="monthly-bills__list-header-value">Valor <span className="monthly-bills__header-edit-hint" title="editável">✏️</span></span>
               <span className="monthly-bills__list-header-account">Conta</span>
               <span className="monthly-bills__list-header-menu" aria-hidden="true" />
             </div>
             <ul className="monthly-bills__list" role="list">
-              {payables.map((payable) => (
+              {payables.map((payable, index) => {
+                const isLastRow = index === payables.length - 1;
+                return (
                 <li
                   key={payable.id || payable.templateId}
                   className={`monthly-bills__row ${
@@ -497,8 +500,11 @@ export function MonthlyBills({ user }) {
                       <span className="monthly-bills__checkbox-loading">⏳</span>
                     )}
                   </div>
-                  <div className="monthly-bills__row-name" title={`Venc. ${formatDate(payable.dueDate)} • ${payable.categoryName || ""}`}>
+                  <div className="monthly-bills__row-name" title={payable.categoryName || ""}>
                     {payable.title || "Sem título"}
+                  </div>
+                  <div className="monthly-bills__row-due">
+                    {formatDate(payable.dueDate)}
                   </div>
                   <div className="monthly-bills__row-value">
                     {editingAmountId === payable.id ? (
@@ -546,7 +552,7 @@ export function MonthlyBills({ user }) {
                       ))}
                     </select>
                   </div>
-                  <div className="monthly-bills__row-menu">
+                  <div className={`monthly-bills__row-menu ${isLastRow ? "monthly-bills__row-menu--open-up" : ""}`}>
                     <button
                       type="button"
                       className="monthly-bills__menu-trigger"
@@ -555,7 +561,7 @@ export function MonthlyBills({ user }) {
                       aria-haspopup="true"
                       title="Opções"
                     >
-                      ⋮
+                      ⋯
                     </button>
                     {menuOpenId === payable.templateId && (
                       <>
@@ -568,7 +574,8 @@ export function MonthlyBills({ user }) {
                     )}
                   </div>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           </>
         )}
