@@ -24,6 +24,10 @@ export function MonthlyBills({ user }) {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [pendingStatusId, setPendingStatusId] = useState(null);
   const [pendingMonthKey, setPendingMonthKey] = useState(null);
+  const [accounts, setAccounts] = useState([]);
+  /** Por statusId: accountId a usar ao marcar como pago */
+  const [accountByStatusId, setAccountByStatusId] = useState({});
+  const [menuOpenId, setMenuOpenId] = useState(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -81,25 +85,36 @@ export function MonthlyBills({ user }) {
     setLoading(true);
     try {
       console.log('[MonthlyBills] Loading data for month:', selectedMonth, 'uid:', user.uid);
-      const [payablesList, categoriesList] = await Promise.all([
+      const [payablesList, categoriesList, accountsList] = await Promise.all([
         payableService.getByMonth(selectedMonth, user.uid).catch(err => {
           console.error('[MonthlyBills] Error in getByMonth:', err);
-          return []; // Retornar array vazio em caso de erro
+          return [];
         }),
         categoryService.getAll(user.uid).catch(err => {
           console.error('[MonthlyBills] Error in getAll categories:', err);
-          console.error('[MonthlyBills] Error details:', err.message, err.stack);
-          return []; // Retornar array vazio em caso de erro
+          return [];
         }),
+        accountService.getAll(user.uid, true).catch(() => []),
       ]);
-      console.log('[MonthlyBills] Loaded payables:', payablesList?.length || 0, 'items');
-      console.log('[MonthlyBills] Loaded categories (all):', categoriesList?.length || 0, 'total');
-      console.log('[MonthlyBills] All categories details:', categoriesList?.map(c => ({ id: c.id, name: c.name, type: c.type, uid: c.uid })) || []);
       const expenseCategories = (categoriesList || []).filter(cat => cat.type === 'expense');
-      console.log('[MonthlyBills] Expense categories:', expenseCategories.length, 'items');
-      console.log('[MonthlyBills] Expense categories names:', expenseCategories.map(c => c.name));
-      setPayables(payablesList || []);
+      // Ordenar por data de vencimento (dueDate)
+      const sorted = (payablesList || []).slice().sort((a, b) => {
+        const da = new Date(a.dueDate || 0).getTime();
+        const db = new Date(b.dueDate || 0).getTime();
+        return da - db;
+      });
+      const primaryAccount = (accountsList || []).find(a => a.isPrimary) || (accountsList || [])[0];
+      setPayables(sorted);
       setCategories(expenseCategories);
+      setAccounts(accountsList || []);
+      // Inicializar conta selecionada por linha com a conta principal
+      setAccountByStatusId(prev => {
+        const next = { ...prev };
+        (sorted || []).forEach(p => {
+          if (p.id && next[p.id] === undefined) next[p.id] = primaryAccount?.id || '';
+        });
+        return next;
+      });
     } catch (error) {
       console.error("[MonthlyBills] Error loading data:", error);
       console.error("[MonthlyBills] Error stack:", error.stack);
@@ -156,31 +171,21 @@ export function MonthlyBills({ user }) {
     const currentPayable = payables.find(p => p.id === statusId);
     if (!currentPayable) return;
     
-    // Se está marcando como pago, verificar se precisa selecionar conta
+    // Se está marcando como pago, verificar conta (linha > principal > modal)
     if (currentPayable.status === 'open') {
-      // Buscar banco principal
+      const selectedInRow = accountByStatusId[statusId];
       try {
         const primaryAccount = await accountService.getPrimaryAccount(user.uid);
-        console.log('[MonthlyBills] handleToggleStatus - Primary account:', primaryAccount);
-        
-        if (primaryAccount && primaryAccount.id) {
-          // Tem banco principal, usar automaticamente
-          console.log('[MonthlyBills] handleToggleStatus - Using primary account:', {
-            id: primaryAccount.id,
-            name: primaryAccount.name,
-            balance: primaryAccount.balance
-          });
-          await executeToggleStatus(statusId, monthKey, primaryAccount.id);
+        const accountId = selectedInRow || (primaryAccount?.id) || null;
+        if (accountId) {
+          await executeToggleStatus(statusId, monthKey, accountId);
         } else {
-          // Não tem banco principal, mostrar modal para selecionar
-          console.log('[MonthlyBills] handleToggleStatus - No primary account, showing modal');
           setPendingStatusId(statusId);
           setPendingMonthKey(monthKey);
           setShowAccountModal(true);
         }
       } catch (error) {
-        console.error('[MonthlyBills] handleToggleStatus - Error fetching primary account:', error);
-        // Em caso de erro, mostrar modal para selecionar
+        console.error('[MonthlyBills] handleToggleStatus - Error:', error);
         setPendingStatusId(statusId);
         setPendingMonthKey(monthKey);
         setShowAccountModal(true);
@@ -455,7 +460,7 @@ export function MonthlyBills({ user }) {
         </Card>
       )}
 
-      <Card>
+      <div className="monthly-bills__list-wrap">
         {payables.length === 0 ? (
           <p className="monthly-bills__empty">
             Nenhuma despesa mensal cadastrada para este mês.
@@ -463,36 +468,41 @@ export function MonthlyBills({ user }) {
             <small>As despesas mensais aparecem automaticamente em todos os meses.</small>
           </p>
         ) : (
-          <div className="monthly-bills__list">
-            {payables.map((payable) => (
-              <div
-                key={payable.templateId}
-                className={`monthly-bills__item ${
-                  payable.status === "paid" ? "monthly-bills__item--paid" : ""
-                }`}
-              >
-                <div className="monthly-bills__item-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={payable.status === "paid"}
-                    onChange={() => handleToggleStatus(payable.id, payable.monthKey)}
-                    disabled={togglingStatusId === payable.id}
-                    className="monthly-bills__checkbox"
-                    title={payable.status === "paid" 
-                      ? "Marcar como não pago (remove transação automática)" 
-                      : "Marcar como pago (cria transação automática)"}
-                  />
-                  {togglingStatusId === payable.id && (
-                    <span className="monthly-bills__checkbox-loading">⏳</span>
-                  )}
-                </div>
-                <div className="monthly-bills__item-content">
-                  <div className="monthly-bills__item-header">
-                    <strong className="monthly-bills__item-title">
-                      {payable.title || "Sem título"}
-                    </strong>
+          <>
+            <div className="monthly-bills__list-header">
+              <span className="monthly-bills__list-header-check">✓</span>
+              <span className="monthly-bills__list-header-name">Nome</span>
+              <span className="monthly-bills__list-header-value">Valor</span>
+              <span className="monthly-bills__list-header-account">Conta</span>
+              <span className="monthly-bills__list-header-menu" aria-hidden="true" />
+            </div>
+            <ul className="monthly-bills__list" role="list">
+              {payables.map((payable) => (
+                <li
+                  key={payable.id || payable.templateId}
+                  className={`monthly-bills__row ${
+                    payable.status === "paid" ? "monthly-bills__row--paid" : ""
+                  }`}
+                >
+                  <div className="monthly-bills__row-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={payable.status === "paid"}
+                      onChange={() => handleToggleStatus(payable.id, payable.monthKey)}
+                      disabled={togglingStatusId === payable.id}
+                      className="monthly-bills__checkbox"
+                      title={payable.status === "paid" ? "Marcar como não pago" : "Marcar como pago"}
+                    />
+                    {togglingStatusId === payable.id && (
+                      <span className="monthly-bills__checkbox-loading">⏳</span>
+                    )}
+                  </div>
+                  <div className="monthly-bills__row-name" title={`Venc. ${formatDate(payable.dueDate)} • ${payable.categoryName || ""}`}>
+                    {payable.title || "Sem título"}
+                  </div>
+                  <div className="monthly-bills__row-value">
                     {editingAmountId === payable.id ? (
-                      <div className="monthly-bills__item-amount-edit">
+                      <div className="monthly-bills__row-value-edit">
                         <input
                           type="number"
                           step="0.01"
@@ -500,97 +510,69 @@ export function MonthlyBills({ user }) {
                           value={editingAmountValue}
                           onChange={(e) => setEditingAmountValue(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleSaveAmount(payable);
-                            } else if (e.key === 'Escape') {
-                              handleCancelEditAmount();
-                            }
+                            if (e.key === "Enter") handleSaveAmount(payable);
+                            else if (e.key === "Escape") handleCancelEditAmount();
                           }}
                           autoFocus
                           className="monthly-bills__amount-input"
                         />
-                        <div className="monthly-bills__amount-actions">
-                          <button
-                            type="button"
-                            onClick={() => handleSaveAmount(payable)}
-                            className="monthly-bills__amount-save"
-                            title="Salvar (Enter)"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCancelEditAmount}
-                            className="monthly-bills__amount-cancel"
-                            title="Cancelar (Esc)"
-                          >
-                            ✕
-                          </button>
-                        </div>
+                        <button type="button" onClick={() => handleSaveAmount(payable)} className="monthly-bills__btn-save" title="Salvar">✓</button>
+                        <button type="button" onClick={handleCancelEditAmount} className="monthly-bills__btn-cancel" title="Cancelar">✕</button>
                       </div>
                     ) : (
-                      <div 
-                        className="monthly-bills__item-amount monthly-bills__item-amount--editable"
+                      <button
+                        type="button"
+                        className="monthly-bills__row-value-display"
                         onClick={() => handleStartEditAmount(payable)}
                         title="Clique para editar o valor"
                       >
-                        <span className="monthly-bills__amount-value">
-                          {formatCurrency(payable.amount || 0)}
-                          {payable.amountOverride !== undefined && payable.amountOverride !== null && (
-                            <span className="monthly-bills__amount-override-indicator" title="Valor personalizado para este mês">
-                              *
-                            </span>
-                          )}
-                        </span>
-                        <span className="monthly-bills__amount-edit-icon" title="Editar valor">
-                          ✏️
-                        </span>
-                      </div>
+                        {formatCurrency(payable.amount || 0)}
+                        {payable.amountOverride !== undefined && payable.amountOverride !== null && (
+                          <span className="monthly-bills__amount-asterisk" title="Valor personalizado">*</span>
+                        )}
+                      </button>
                     )}
                   </div>
-                  <div className="monthly-bills__item-meta">
-                    <span>Vencimento: dia {payable.dueDay || 10}</span>
-                    <span>•</span>
-                    <span>{formatDate(payable.dueDate)}</span>
-                    <span>•</span>
-                    <span>{payable.categoryName || "Sem categoria"}</span>
-                    {payable.notes && (
+                  <div className="monthly-bills__row-account">
+                    <select
+                      value={accountByStatusId[payable.id] ?? ""}
+                      onChange={(e) => setAccountByStatusId(prev => ({ ...prev, [payable.id]: e.target.value }))}
+                      className="monthly-bills__account-select"
+                      title="Conta a usar ao marcar como pago"
+                    >
+                      <option value="">—</option>
+                      {accounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="monthly-bills__row-menu">
+                    <button
+                      type="button"
+                      className="monthly-bills__menu-trigger"
+                      onClick={() => setMenuOpenId(menuOpenId === payable.templateId ? null : payable.templateId)}
+                      aria-expanded={menuOpenId === payable.templateId}
+                      aria-haspopup="true"
+                      title="Opções"
+                    >
+                      ⋮
+                    </button>
+                    {menuOpenId === payable.templateId && (
                       <>
-                        <span>•</span>
-                        <span className="monthly-bills__item-notes">{payable.notes}</span>
-                      </>
-                    )}
-                    {payable.status === "paid" && payable.paidAtISO && (
-                      <>
-                        <span>•</span>
-                        <span className="monthly-bills__item-paid">
-                          Pago em {formatDate(payable.paidAtISO)}
-                        </span>
+                        <div className="monthly-bills__menu-backdrop" onClick={() => setMenuOpenId(null)} aria-hidden="true" />
+                        <div className="monthly-bills__menu-dropdown" role="menu">
+                          <button type="button" role="menuitem" onClick={() => { handleEdit(payable); setMenuOpenId(null); }}>Editar</button>
+                          <button type="button" role="menuitem" onClick={() => { handleDelete(payable.templateId); setMenuOpenId(null); }}>Excluir</button>
+                        </div>
                       </>
                     )}
                   </div>
-                </div>
-                <div className="monthly-bills__item-actions">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleEdit(payable)}
-                    className="monthly-bills__item-edit"
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    variant="danger"
-                    onClick={() => handleDelete(payable.templateId)}
-                    className="monthly-bills__item-delete"
-                  >
-                    Excluir
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
-      </Card>
+      </div>
 
       <AccountSelectModal
         isOpen={showAccountModal}
