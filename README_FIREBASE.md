@@ -97,10 +97,18 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Transações: apenas o dono pode ler/escrever, sempre filtrado por monthKey
+    // Transações: apenas o dono pode ler/escrever
+    // IMPORTANTE: Para queries funcionarem, a regra precisa validar o uid do documento
     match /transactions/{transactionId} {
-      allow read, write: if isOwner(resource.data.uid);
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      // Para leitura: verificar se o documento pertence ao usuário autenticado
+      allow read: if isAuthenticated() && 
+                     (resource == null || resource.data.uid == request.auth.uid);
+      // Para escrita (update/delete): verificar se o documento pertence ao usuário
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.uid == request.auth.uid;
+      // Para criação: verificar se o uid sendo criado é do usuário autenticado
+      allow create: if isAuthenticated() && 
+                       request.resource.data.uid == request.auth.uid;
     }
 
     // Accounts: subcollection de users
@@ -113,10 +121,19 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
     }
 
-    // Monthly Summaries: apenas leitura pelo dono, escrita apenas via Cloud Functions (ou manual)
-    match /monthlySummaries/{monthKey} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Escrita apenas via Cloud Functions ou admin
+    // Monthly Summaries: formato do documento é {uid}_{monthKey}
+    // Exemplo: QGazAdNJKLc2TFY4ippouIXcARE2_2026-02
+    match /monthlySummaries/{docId} {
+      // Extrair uid do início do docId (antes do primeiro underscore)
+      function getUidFromDocId() {
+        return docId.split('_')[0];
+      }
+      // Permitir leitura apenas se o uid no docId corresponde ao usuário autenticado
+      allow read: if isAuthenticated() && 
+                     getUidFromDocId() == request.auth.uid;
+      // Permitir escrita apenas se o uid no docId corresponde ao usuário autenticado
+      allow write: if isAuthenticated() && 
+                      getUidFromDocId() == request.auth.uid;
     }
 
     // User Meta: apenas o dono pode ler/escrever

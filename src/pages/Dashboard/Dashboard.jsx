@@ -15,6 +15,7 @@ export function Dashboard({ user }) {
   const location = useLocation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(getMonthKey(new Date()));
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export function Dashboard({ user }) {
     }
     console.log('[Dashboard] loadDashboard - Loading for month:', selectedMonth, 'uid:', user.uid);
     setLoading(true);
+    setError(null);
     try {
       const [dashboardData, upcomingPayables, accounts] = await Promise.all([
         dashboardService.getDashboardData(selectedMonth),
@@ -75,8 +77,12 @@ export function Dashboard({ user }) {
         accounts: accounts.map(a => ({ id: a.id, name: a.name, balance: a.balance }))
       });
       setData({ ...dashboardData, upcomingPayables, accounts });
-    } catch (error) {
-      console.error('[Dashboard] loadDashboard - Error loading dashboard:', error);
+    } catch (err) {
+      console.error('[Dashboard] loadDashboard - Error loading dashboard:', err);
+      const isPermissionError = err?.message?.includes('permission') || err?.code === 'permission-denied';
+      setError(isPermissionError
+        ? 'Não foi possível carregar os dados. Verifique as regras de segurança do Firestore no Firebase Console.'
+        : err?.message || 'Erro ao carregar o dashboard.');
     } finally {
       setLoading(false);
     }
@@ -87,6 +93,9 @@ export function Dashboard({ user }) {
   const recentTransactions = data?.recentTransactions || [];
   const upcomingPayables = data?.upcomingPayables || [];
   const accounts = data?.accounts || [];
+
+  // Saldo total das contas bancárias (dinheiro real)
+  const totalAccountBalance = accounts.reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
   
   // Valores para gráficos (convertendo para números)
   const totalIncome = summary.totalIncome || 0;
@@ -107,6 +116,19 @@ export function Dashboard({ user }) {
     );
   }
 
+  if (error) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard__error">
+          <p>{error}</p>
+          <button type="button" className="dashboard__retry" onClick={() => loadDashboard()}>
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard">
       <div className="dashboard__header">
@@ -119,18 +141,20 @@ export function Dashboard({ user }) {
         />
       </div>
 
-      {/* Mobile: Saldo em cima, depois Receitas/Despesas lado a lado */}
+      {/* Saldo = sempre valor em conta (soma dos bancos); não zera todo mês */}
       <div className="dashboard__top">
         <Card className="dashboard__card dashboard__card--balance">
           <div className="dashboard__card-label">Saldo</div>
+          <div className="dashboard__card-sublabel">Total em conta (acompanha o mês anterior)</div>
           <div className="dashboard__card-value">
-            {formatCurrency(summary.balance || 0)}
+            {formatCurrency(totalAccountBalance)}
           </div>
         </Card>
 
         <div className="dashboard__income-expense">
           <Card className="dashboard__card dashboard__card--income">
             <div className="dashboard__card-label">Receitas</div>
+            <div className="dashboard__card-sublabel">{selectedMonth ? selectedMonth.split('-').reverse().join('/') : ''}</div>
             <div className="dashboard__card-value">
               {formatCurrency(summary.totalIncome || 0)}
             </div>
@@ -138,6 +162,7 @@ export function Dashboard({ user }) {
 
           <Card className="dashboard__card dashboard__card--expense">
             <div className="dashboard__card-label">Despesas</div>
+            <div className="dashboard__card-sublabel">{selectedMonth ? selectedMonth.split('-').reverse().join('/') : ''}</div>
             <div className="dashboard__card-value">
               {formatCurrency(summary.totalExpense || 0)}
             </div>
